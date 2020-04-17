@@ -15,7 +15,7 @@ const processJobs = (jobService: JobsService) => {
   jobService
     .getNextJob()
     .then(job => {
-      debug('found job to process: %s', job);
+      debug('found job to process: %s', job.jobId);
       return jobService
         .executeJob(job)
         .then(() => debug('completed processing job %s', job))
@@ -42,7 +42,7 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
     container.set(JobsService, jobsService);
     container.set(WatcherService, watcherService);
 
-    await watcherService.start(environment.watch.pollIntervalMs);
+    watcherService.start(environment.watch.pollIntervalMs);
     processJobs(jobsService);
   };
 }

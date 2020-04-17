@@ -20,7 +20,6 @@ export class JobsService {
   private readonly scriptsDir: string;
 
   constructor(private readonly repository: JobsRepository, private readonly pollIntervalMs: number = 5 * 60 * 1000) {
-    debug('CREATE');
     this.scriptsDir = './scripts';
   }
 

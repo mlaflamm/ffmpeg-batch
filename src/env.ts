@@ -24,12 +24,12 @@ export class Environment {
 
     this.jobs = {
       dir: getOsEnv('JOBS_DIR') || '/config/jobs',
-      pollIntervalMs: toNumber('JOBS_POLL_INTERVAL_MS') || 5 * 60 * 1000,
+      pollIntervalMs: toNumber(getOsEnv('JOBS_POLL_INTERVAL_MS')) || 1 * 60 * 1000,
     };
     this.watch = {
       dir: getOsEnv('WATCH_DIR') || devOnly('WATCH_DIR', '/config/watch'),
-      pollIntervalMs: toNumber('WATCH_POLL_INTERVAL_MS') || 2 * 60 * 1000,
-      defaultScript: 'WATCH_DEFAULT_SCRIPT' || 'scale.sh',
+      pollIntervalMs: toNumber(getOsEnv('WATCH_POLL_INTERVAL_MS')) || 2 * 60 * 1000,
+      defaultScript: getOsEnv('WATCH_DEFAULT_SCRIPT') || 'scale.sh',
     };
   }
 }

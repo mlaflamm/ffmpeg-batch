@@ -1,0 +1,14 @@
+# Coverage reports
+coverage
+.nyc_output
+
+# Test output directories
+.test
+.temp
+
+# Editors
+.vscode
+.idea
+*.iml
+
+.DS_STORE
