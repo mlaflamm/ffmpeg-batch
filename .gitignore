@@ -1,0 +1,27 @@
+
+# Coverage reports
+coverage
+.nyc_output
+
+# Test output directories
+.test
+.temp
+
+# Dependency directory
+node_modules
+
+# Editors
+.vscode
+.idea
+*.iml
+
+
+# Ignore built ts files
+dist
+app/dist
+app/.cache
+
+
+# https://docs.microsoft.com/en-us/visualstudio/liveshare/reference/security#controlling-file-access-and-visibility
+
+.DS_STORE
