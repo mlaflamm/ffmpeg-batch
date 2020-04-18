@@ -1,12 +1,11 @@
 #! /bin/bash
 
-OUT=${2//%/%%}
-
 echo $1
-echo $OUT
+echo $2
 
-# first arg must be a dash delimited string to control a loop
-# e.g. "5-0.2-1" will loop 5 times, sleep 0.2s on every loop and exit with code 1
+# The first argument must be a + delimited string to control a test loop simulating processing time
+# e.g. "head+5+0.2+1+tail" will loop 5 times, sleep 0.2s on every loop and exit with code 1.
+# The HEAD and TAIL values are discarded to allows usage of fully qualified file (inc. extension) as input value.
 IFS=+ read HEAD COUNT SLEEP CODE TAIL <<< $1
 
 for ((n=0;n<$COUNT;n++))
