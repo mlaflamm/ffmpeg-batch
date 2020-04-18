@@ -7,8 +7,14 @@ import { Application } from 'express';
 
 import { createAppFramework } from './app';
 
+const randomString = () => {
+  Math.random()
+    .toString(36)
+    .slice(7);
+};
+
 async function main() {
-  const framework = await createAppFramework(process.env.NODE_ENV || 'dev', Container.of('test'));
+  const framework = await createAppFramework(process.env.NODE_ENV || 'development', Container.of(randomString));
   const app: Application = framework.settings.getData('app');
   assert(app, 'app must be provided');
 

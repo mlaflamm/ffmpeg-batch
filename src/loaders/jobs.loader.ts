@@ -42,7 +42,15 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
     container.set(JobsService, jobsService);
     container.set(WatcherService, watcherService);
 
-    watcherService.start(environment.watch.pollIntervalMs);
-    processJobs(jobsService);
+    debug('watch enabled: %s', environment.watch.enabled)
+    if (environment.watch.enabled) {
+      await watcherService.process();
+      watcherService.start(environment.watch.pollIntervalMs);
+    }
+
+    debug('jobs enabled: %s', environment.jobs.enabled)
+    if (environment.jobs.enabled) {
+      processJobs(jobsService);
+    }
   };
 }
