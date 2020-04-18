@@ -62,7 +62,7 @@ export class JobsRepository {
     return await readFirstLine(this.getJobPath(jobId))
       .then(line => ({ jobId, ...JSON.parse(line) }))
       .catch(err => {
-        debug('Got error when reading job: %s', jobId, err);
+        debug('Got error when reading job: "%s"', jobId, err);
       });
   }
 
@@ -91,7 +91,8 @@ export class JobsRepository {
 
     // Touch and move job file
     debug('start job - touch %s', sourceJobFilePath);
-    if (fs.existsSync(sourceJobFilePath)) { // Use sync API to ensure atomicity (assuming single process here!)
+    if (fs.existsSync(sourceJobFilePath)) {
+      // Use sync API to ensure atomicity (assuming single process here!)
       await fs.appendFileSync(sourceJobFilePath, '\n\n');
       if (sourceJobFilePath !== runningJobFilePath) {
         // Move job file to in progress directory
@@ -125,11 +126,12 @@ export class JobsRepository {
 
   // getStartedJobIds
   private async getStartedJobIds(): Promise<string[]> {
-    return await fs.promises
-      .readdir(this.jobsDir, { withFileTypes: true })
-      .then(entries =>
-        entries.map(entry => (!entry.isDirectory() && entry.name.endsWith('.job') ? entry.name : '')).sort()
-      );
+    return await fs.promises.readdir(this.jobsDir, { withFileTypes: true }).then(entries =>
+      entries
+        .map(entry => (!entry.isDirectory() && entry.name.endsWith('.job') ? entry.name : ''))
+        .filter(name => !!name)
+        .sort()
+    );
   }
 
   // getStalledJobIds
