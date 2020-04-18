@@ -91,7 +91,7 @@ export class JobsRepository {
 
     // Touch and move job file
     debug('start job - touch %s', sourceJobFilePath);
-    if (fs.existsSync(sourceJobFilePath)) {
+    if (fs.existsSync(sourceJobFilePath)) { // Use sync API to ensure atomicity (assuming single process here!)
       await fs.appendFileSync(sourceJobFilePath, '\n\n');
       if (sourceJobFilePath !== runningJobFilePath) {
         // Move job file to in progress directory
