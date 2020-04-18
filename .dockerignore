@@ -11,4 +11,9 @@ coverage
 .idea
 *.iml
 
-.DS_STORE
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Env files
+.env*

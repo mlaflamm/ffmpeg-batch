@@ -29,8 +29,15 @@ export class JobsController {
   public async getJobs(@QueryParam('status') status?: string) {
     const ids = await this.jobRepository.getAllJobIds();
     if (status) {
-      return ids.map(toJobView).filter(id => id.status === status);
+      return ids
+        .map(toJobView)
+        .filter(id => id.status === status)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .reverse();
     }
-    return ids.map(toJobView);
+    return ids
+      .map(toJobView)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .reverse();
   }
 }

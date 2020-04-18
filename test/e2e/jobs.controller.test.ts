@@ -34,11 +34,11 @@ describe('Jobs api routes', () => {
       assertStatus(allJobsResponse, 200);
 
       assert.deepEqual(allJobsResponse.body, [
-        { name: 'test1', status: 'started' },
-        { name: 'test2', status: 'todo' },
-        { name: 'test3', status: 'todo' },
-        { name: 'test4', status: 'done' },
         { name: 'test5', status: 'error' },
+        { name: 'test4', status: 'done' },
+        { name: 'test3', status: 'todo' },
+        { name: 'test2', status: 'todo' },
+        { name: 'test1', status: 'started' },
       ]);
     });
 
@@ -54,8 +54,8 @@ describe('Jobs api routes', () => {
       assertStatus(allJobsResponse, 200);
 
       assert.deepEqual(allJobsResponse.body, [
-        { name: 'test2', status: 'todo' },
         { name: 'test3', status: 'todo' },
+        { name: 'test2', status: 'todo' },
       ]);
     });
 
