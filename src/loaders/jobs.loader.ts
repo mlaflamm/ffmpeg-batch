@@ -49,8 +49,9 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
     }
 
     debug('jobs enabled: %s', environment.jobs.enabled)
-    if (environment.jobs.enabled) {
-      processJobs(jobsService);
+    if (!environment.jobs.enabled) {
+      jobsService.pause();
     }
+    processJobs(jobsService);
   };
 }

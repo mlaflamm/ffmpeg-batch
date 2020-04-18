@@ -12,7 +12,7 @@ export function createAppFramework(environment: string, container: ContainerInst
   container.set(Environment, env);
 
   return bootstrapMicroframework([
-    expressLoader(),
+    expressLoader(env),
     jobsLoader(env, container),
     webuiLoader(),
     controllerLoader(container),

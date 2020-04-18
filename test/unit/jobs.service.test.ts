@@ -5,9 +5,10 @@ import { assert } from 'chai';
 
 import { JobsService } from '../../src/libs/jobs.service';
 import { JobsRepository } from '../../src/libs/jobs.repository';
+import { randomString } from '../fixtures';
 
 describe('Job service', () => {
-  const testDir = path.join('./.test', Math.random().toString(36).substring(7));
+  const testDir = path.join('.test', randomString());
 
   beforeEach(async () => {
     await fs.promises.rmdir(testDir, { recursive: true });
@@ -15,7 +16,7 @@ describe('Job service', () => {
   });
 
   after(async () => {
-    await fs.promises.rmdir('./.test', { recursive: true });
+    await fs.promises.rmdir('.test', { recursive: true });
   });
 
   describe('execute job', () => {

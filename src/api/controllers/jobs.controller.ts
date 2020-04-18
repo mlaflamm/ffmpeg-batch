@@ -21,7 +21,7 @@ const toJobView = (jobId: string): JobView => {
   };
 };
 
-@JsonController('/v1/jobs')
+@JsonController('/api/jobs')
 export class JobsController {
   constructor(private readonly jobRepository: JobsRepository) {}
 

@@ -1,19 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import touch from 'touch';
 
 import { assert } from 'chai';
 
 import { Job, JobsRepository } from '../../src/libs/jobs.repository';
+import * as fixture from '../fixtures';
 
 describe('Job repository', () => {
-  const testDir = path.join('./.test', Math.random().toString(36).substring(7));
+  const testDir = path.join('.test', fixture.randomString());
 
-  const createJob = async (job: Job, time: Date = new Date()) => {
-    const jobPath = path.join(testDir, job.jobId);
-    await fs.promises.writeFile(jobPath, JSON.stringify({ ...job, jobId: undefined }));
-    await touch(jobPath, { time });
-  };
+  const createJob = async (job: Job, time: Date = new Date()) => fixture.createJob(testDir, job, time);
 
   beforeEach(async () => {
     await fs.promises.rmdir(testDir, { recursive: true });
@@ -21,8 +17,7 @@ describe('Job repository', () => {
   });
 
   after(async () => {
-    // await fs.promises.rmdir(testDir, { recursive: true });
-    await fs.promises.rmdir('./.test', { recursive: true });
+    await fs.promises.rmdir('.test', { recursive: true });
   });
 
   describe('get job', () => {

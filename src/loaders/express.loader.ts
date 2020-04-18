@@ -1,8 +1,11 @@
 import bodyParser from 'body-parser';
 import express, { Application } from 'express';
-import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
+import morgan from 'morgan';
 
-export function expressLoader(): MicroframeworkLoader {
+import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
+import { Environment } from '../env';
+
+export function expressLoader(env: Environment): MicroframeworkLoader {
   return (settings: MicroframeworkSettings | undefined) => {
     if (!settings) {
       throw new Error('Bootstrap Microframework did not provide settings');
@@ -10,14 +13,11 @@ export function expressLoader(): MicroframeworkLoader {
 
     const app: Application = express();
 
-    app.use(bodyParser.json());
+    if (env.nodeEnv !== 'test') {
+      app.use(morgan('dev'));
+    }
 
-    app.get('/about', (req, res, next) => {
-      res.json({
-        version: 'None of your business',
-        description: 'CV Training App',
-      });
-    });
+    app.use(bodyParser.json());
 
     settings.setData('app', app);
   };

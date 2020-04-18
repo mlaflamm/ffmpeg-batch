@@ -2,6 +2,8 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 
 export class Environment {
+  public nodeEnv: string;
+
   public jobs: {
     enabled: boolean;
     dir: string;
@@ -30,14 +32,15 @@ export class Environment {
       return defaultValue;
     };
 
+    this.nodeEnv = environment;
     this.jobs = {
-      enabled: toBool(getOsEnv('JOBS_ENABLED')) || false,
-      dir: getOsEnv('JOBS_DIR') || '/config/jobs',
+      enabled: toBool(getOsEnv('JOBS_ENABLED')),
+      dir: getOsEnv('JOBS_DIR') || '.temp/jobs',
       pollIntervalMs: toNumber(getOsEnv('JOBS_POLL_INTERVAL_MS')) || 3 * 60 * 1000,
     };
     this.watch = {
-      enabled: toBool(getOsEnv('WATCH_ENABLED')) || false,
-      dir: getOsEnv('WATCH_DIR') || devOnly('WATCH_DIR', '/config/watch'),
+      enabled: toBool(getOsEnv('WATCH_ENABLED')),
+      dir: getOsEnv('WATCH_DIR') || devOnly('WATCH_DIR', '.temp/watch'),
       pollIntervalMs: toNumber(getOsEnv('WATCH_POLL_INTERVAL_MS')) || 2 * 60 * 1000,
       defaultScript: getOsEnv('WATCH_DEFAULT_SCRIPT') || 'scale.sh',
     };

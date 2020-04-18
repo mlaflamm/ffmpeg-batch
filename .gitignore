@@ -18,12 +18,11 @@ node_modules
 
 # Ignore built ts files
 dist
-app/dist
-app/.cache
+
+# OS metadata
+.DS_Store
+Thumbs.db
 
 # Env files
 .env*
-
-# https://docs.microsoft.com/en-us/visualstudio/liveshare/reference/security#controlling-file-access-and-visibility
-
-.DS_STORE
+!.env.test

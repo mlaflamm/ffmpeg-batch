@@ -6,9 +6,10 @@ import { assert } from 'chai';
 
 import { scan, transform, WatcherService } from '../../src/libs/watcher.service';
 import { JobsRepository } from '../../src/libs/jobs.repository';
+import { randomString } from '../fixtures';
 
-describe('Watcher', () => {
-  const testDir = path.join('./.test', Math.random().toString(36).substring(7));
+describe('Watcher service', () => {
+  const testDir = path.join('.test', randomString());
   const watchDir = path.join(testDir, 'watch');
   const jobsDir = path.join(testDir, 'jobs');
 
@@ -27,7 +28,7 @@ describe('Watcher', () => {
   });
 
   after(async () => {
-    await fs.promises.rmdir('./.test', { recursive: true });
+    await fs.promises.rmdir('.test', { recursive: true });
   });
 
   it('should scan files', async () => {

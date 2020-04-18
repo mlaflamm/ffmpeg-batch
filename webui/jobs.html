@@ -1,5 +1,6 @@
 <html>
   <head>
+    <link rel="icon" type="image/png" href="ffmpeg-icon.png" />
     <style>
       body {
         margin: 0;
@@ -70,7 +71,7 @@
         pLoop(() => renderApp(), 30000);
 
         function renderApp() {
-          const jobApi = new URL(document.location.origin + '/v1/jobs');
+          const jobApi = new URL(document.location.origin + '/api/jobs');
           jobApi.search = new URL(document.location).searchParams.toString();
 
           return fetch(jobApi)
