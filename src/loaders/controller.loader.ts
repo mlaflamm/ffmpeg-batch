@@ -5,6 +5,7 @@ import { Application, Request, Response, NextFunction } from 'express';
 import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
 import { useContainer, useExpressServer } from 'routing-controllers';
 import { ContainerInstance } from 'typedi';
+import { JobsController } from '../api/controllers/jobs.controller';
 
 export function controllerLoader(container: ContainerInstance): MicroframeworkLoader {
   return (settings: MicroframeworkSettings | undefined) => {
@@ -20,7 +21,7 @@ export function controllerLoader(container: ContainerInstance): MicroframeworkLo
       cors: true,
       classTransformer: true,
       defaultErrorHandler: false,
-      controllers: [],
+      controllers: [JobsController],
     });
 
     // This is the thing that I fixed inside of routing-controllers for E2. Even if we send a response,

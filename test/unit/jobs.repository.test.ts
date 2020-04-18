@@ -72,6 +72,32 @@ describe('Job repository', () => {
     });
   });
 
+  describe('list all job ids', () => {
+    it('should return nothing when no jobs exist', async () => {
+      const repository = new JobsRepository(testDir);
+      assert.deepEqual(await repository.getAllJobIds(), []);
+    });
+
+    it('should return expected job ids', async () => {
+      const repository = new JobsRepository(testDir);
+
+      const job = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
+      await createJob({ jobId: 'test.job', ...job });
+      await createJob({ jobId: 'todo/test1.job', ...job });
+      await createJob({ jobId: 'todo/test2.job', ...job });
+      await createJob({ jobId: 'done/test.job', ...job });
+      await createJob({ jobId: 'error/test.job', ...job });
+
+      assert.deepEqual(await repository.getAllJobIds(), [
+        'test.job',
+        'todo/test1.job',
+        'todo/test2.job',
+        'done/test.job',
+        'error/test.job',
+      ]);
+    });
+  });
+
   describe('add job', () => {
     it('should be successful', async () => {
       const repository = new JobsRepository(testDir);
@@ -139,8 +165,7 @@ describe('Job repository', () => {
 
       assert.deepEqual(startedJob, { jobId: 'job99.job', ...job });
       assert.deepEqual(await repository.getJob(startedJob.jobId), startedJob);
-      assert.isNotOk(fs.existsSync(path.join(testDir, 'todo/job99.job')));
-      assert.isOk(fs.existsSync(path.join(testDir, 'job99.job')));
+      assert.deepEqual(await repository.getAllJobIds(), ['job99.job']);
     });
 
     it('should NOT move stalled job but update time', async () => {
@@ -156,7 +181,7 @@ describe('Job repository', () => {
 
       assert.deepEqual(startedJob, { jobId: 'job99.job', ...job });
       assert.deepEqual(await repository.getJob(startedJob.jobId), startedJob);
-      assert.isNotOk(fs.existsSync(path.join(testDir, 'todo/job99.job')));
+      assert.deepEqual(await repository.getAllJobIds(), ['job99.job']);
       assert.isAbove(fs.statSync(path.join(testDir, 'job99.job')).mtimeMs, initialJobModifiedTime + 59000);
     });
 
@@ -165,13 +190,12 @@ describe('Job repository', () => {
 
       const startedJob = await repository.startJob('todo/unknown.job');
       assert.isUndefined(startedJob);
-      assert.isNotOk(fs.existsSync(path.join(testDir, 'todo/unknown.job')));
-      assert.isNotOk(fs.existsSync(path.join(testDir, 'unknown.job')));
+      assert.deepEqual(await repository.getAllJobIds(), []);
     });
   });
 
-  describe('list pending jobs', () => {
-    it('should returns pending jobs', async () => {
+  describe('list incomplete jobs', () => {
+    it('should returns incomplete jobs including started', async () => {
       const repository = new JobsRepository(testDir);
       const job = (jobId: string, suffix: string) => ({
         jobId,

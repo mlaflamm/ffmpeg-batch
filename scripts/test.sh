@@ -1,7 +1,10 @@
 #! /bin/bash
 
-echo $1
-echo $2
+INPUT_FILE=${1//%/%%}
+OUTPUT_FILE=${2//%/%%}
+
+echo "$INPUT_FILE"
+echo "$OUTPUT_FILE"
 
 # The first argument must be a + delimited string to control a test loop simulating processing time
 # e.g. "head+5+0.2+1+tail" will loop 5 times, sleep 0.2s on every loop and exit with code 1.

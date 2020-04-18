@@ -152,6 +152,22 @@ export class JobsRepository {
     return stalledJobs;
   }
 
+  // getJobIdsByStatus
+  private async getJobIdsByStatus(status: 'todo' | 'done' | 'error'): Promise<string[]> {
+    const names = await fs.promises.readdir(path.join(this.jobsDir, status));
+    return names.map(name => path.join(status, name));
+  }
+
+  // getAllJobIds
+  async getAllJobIds(): Promise<string[]> {
+    return [
+      ...(await this.getStartedJobIds()),
+      ...(await this.getJobIdsByStatus('todo')),
+      ...(await this.getJobIdsByStatus('done')),
+      ...(await this.getJobIdsByStatus('error')),
+    ];
+  }
+
   // nextJob
   async getNextJob(): Promise<Job | undefined> {
     debug('Finding next job');
@@ -164,9 +180,8 @@ export class JobsRepository {
       return this.getJob(jobId);
     }
 
-    const todoJobs = await fs.promises.readdir(this.todoDir).then(children => children.sort());
-    if (todoJobs.length > 0) {
-      const jobId = path.join('todo', todoJobs[0]);
+    const [jobId] = await this.getJobIdsByStatus('todo').then(children => children.sort());
+    if (jobId) {
       debug('Found job to run "%s"', jobId);
       return this.getJob(jobId);
     }
