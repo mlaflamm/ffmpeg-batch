@@ -62,7 +62,7 @@ export class JobsRepository {
     return await readFirstLine(this.getJobPath(jobId))
       .then(line => ({ jobId, ...JSON.parse(line) }))
       .catch(err => {
-        debug('Got error when reading job %s', err.message, err);
+        debug('Got error when reading job: %s', jobId, err);
       });
   }
 
@@ -123,13 +123,18 @@ export class JobsRepository {
     return path.join('done', path.basename(jobId));
   }
 
-  // stalledJobs
-  async getStalledJobIds(): Promise<string[]> {
-    const startedJobs = await fs.promises
+  // getStartedJobIds
+  private async getStartedJobIds(): Promise<string[]> {
+    return await fs.promises
       .readdir(this.jobsDir, { withFileTypes: true })
       .then(entries =>
         entries.map(entry => (!entry.isDirectory() && entry.name.endsWith('.job') ? entry.name : '')).sort()
       );
+  }
+
+  // getStalledJobIds
+  private async getStalledJobIds(): Promise<string[]> {
+    const startedJobs = await this.getStartedJobIds();
     const stalledJobs = (
       await Promise.all(
         startedJobs.map(name => {
@@ -165,15 +170,15 @@ export class JobsRepository {
     }
   }
 
-  // listPendingJobs
-  async listPendingJobs(): Promise<Job[]> {
-    const stalledJobs = await this.getStalledJobIds();
+  // getIncompleteJobs
+  async getIncompleteJobs(): Promise<Job[]> {
+    const startedJobs = await this.getStartedJobIds();
     const todoJobs = await fs.promises
       .readdir(this.todoDir)
       .then(children => children.sort().map(id => path.join('todo', id)));
 
     const jobs: Job[] = [];
-    for (const jobId of [...stalledJobs, ...todoJobs]) {
+    for (const jobId of [...startedJobs, ...todoJobs]) {
       const job = await this.getJob(jobId);
       if (job) {
         jobs.push(job);

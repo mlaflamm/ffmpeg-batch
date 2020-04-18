@@ -18,8 +18,8 @@ const processJobs = (jobService: JobsService) => {
       debug('found job to process: %s', job.jobId);
       return jobService
         .executeJob(job)
-        .then(() => debug('completed processing job %s', job))
-        .catch(err => debug('Error occurred while processing job %s: %s', job, err.message));
+        .then(() => debug('completed processing job %s', job.jobId))
+        .catch(err => debug('Error occurred while processing job %s: %s', job.jobId, err.message));
     })
     .then(() => void processJobs(jobService))
     .catch(err => {

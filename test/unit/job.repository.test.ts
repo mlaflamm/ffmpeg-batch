@@ -180,18 +180,18 @@ describe('Job repository', () => {
         scriptName: 'test.sh',
       });
 
-      await createJob(job('job99.job', '99'), new Date(Date.now() - 60000));
+      await createJob(job('job99.job', '99'), new Date(Date.now() - 61000)); // started & stalled
       await createJob(job('job66', '66'), new Date(Date.now() - 60000)); // bad extension
       await createJob(job('todo/job33.job', '33'));
-      await createJob(job('job00.job', '00'));
+      await createJob(job('job00.job', '00')); // started, not stalled
 
-      const expected = [job('job99.job', '99'), job('todo/job33.job', '33')];
-      assert.deepEqual(await repository.listPendingJobs(), expected);
+      const expected = [job('job00.job', '00'), job('job99.job', '99'), job('todo/job33.job', '33')];
+      assert.deepEqual(await repository.getIncompleteJobs(), expected);
     });
 
     it('should return an empty array when no pending jobs', async () => {
       const repository = new JobsRepository(testDir);
-      assert.deepEqual(await repository.listPendingJobs(), []);
+      assert.deepEqual(await repository.getIncompleteJobs(), []);
     });
   });
 });

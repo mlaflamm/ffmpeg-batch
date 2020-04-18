@@ -82,11 +82,11 @@ describe('Watcher', () => {
       ];
 
       // ensure no pending jobs before
-      assert.deepEqual(await jobsRepository.listPendingJobs(), []);
+      assert.deepEqual(await jobsRepository.getIncompleteJobs(), []);
 
       await watcher.process();
 
-      const pendingJobs = await jobsRepository.listPendingJobs();
+      const pendingJobs = await jobsRepository.getIncompleteJobs();
       assert.lengthOf(pendingJobs, 2);
       for (const job of pendingJobs) {
         if (!job) {
@@ -98,7 +98,7 @@ describe('Watcher', () => {
       }
     });
 
-    it('should NOT add duplicate jobs', async () => {
+    it('should NOT add duplicate pending jobs', async () => {
       const jobsRepository = new JobsRepository(jobsDir);
       const watcher = new WatcherService(jobsRepository, watchDir);
 
@@ -107,11 +107,32 @@ describe('Watcher', () => {
 
       await watcher.process();
       await watcher.process();
-      assert.lengthOf(Object.values(await jobsRepository.listPendingJobs()), 2);
+      assert.lengthOf(Object.values(await jobsRepository.getIncompleteJobs()), 2);
 
       await mkFiles('-ok-new', ['test.mp4']);
       await watcher.process();
-      assert.lengthOf(Object.values(await jobsRepository.listPendingJobs()), 3);
+      assert.lengthOf(Object.values(await jobsRepository.getIncompleteJobs()), 3);
+    });
+
+    it('should NOT add duplicate started job', async () => {
+      const jobsRepository = new JobsRepository(jobsDir);
+      const watcher = new WatcherService(jobsRepository, watchDir);
+
+      await mkFiles('-ok-now', ['test.mp4']);
+      await mkFiles('_ok-transform', ['test.mov']);
+
+      await watcher.process();
+      assert.lengthOf(Object.values(await jobsRepository.getIncompleteJobs()), 2);
+
+      const nextJob = await jobsRepository.getNextJob();
+      if (!nextJob) {
+        throw new Error('Should not be undefined!');
+      }
+      await jobsRepository.startJob(nextJob.jobId);
+      assert.lengthOf(Object.values(await jobsRepository.getIncompleteJobs()), 2);
+
+      await watcher.process();
+      assert.lengthOf(Object.values(await jobsRepository.getIncompleteJobs()), 2);
     });
   });
 });

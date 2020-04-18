@@ -8,6 +8,6 @@ WORKDIR /usr/src/app
 COPY . .
 RUN npm install && npm run build
 
-ENV DEBUG=ffmpeg-batch:* DEBUG_COLORS=true
+ENV DEBUG=ffmpeg-batch:*
 
 CMD ["node", "dist/server.js"]

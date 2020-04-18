@@ -115,7 +115,7 @@ export class WatcherService {
       return;
     }
 
-    const pendingJobs = await this.jobsRepository.listPendingJobs();
+    const pendingJobs = await this.jobsRepository.getIncompleteJobs();
     const pendingFiles = files.filter(file => !Object.values(pendingJobs).find(job => job?.inputFilePath === file));
     debug('found %d pending files', pendingFiles.length);
 
