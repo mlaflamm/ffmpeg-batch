@@ -7,6 +7,7 @@ import { assert } from 'chai';
 import { scan, transform, WatcherService } from '../../src/libs/watcher.service';
 import { JobsRepository } from '../../src/libs/jobs.repository';
 import { randomString } from '../fixtures';
+import { JobsService } from '../../src/libs/jobs.service';
 
 describe('Watcher service', () => {
   const testDir = path.join('.test', randomString());
@@ -75,7 +76,7 @@ describe('Watcher service', () => {
   describe('process', () => {
     it('should add new pending jobs', async () => {
       const jobsRepository = new JobsRepository(jobsDir);
-      const watcher = new WatcherService(jobsRepository, watchDir);
+      const watcher = new WatcherService(new JobsService(jobsRepository), watchDir);
 
       const inputFiles = [
         ...(await mkFiles('-ok-now', ['test.mp4'])),
@@ -101,7 +102,7 @@ describe('Watcher service', () => {
 
     it('should NOT add duplicate pending jobs', async () => {
       const jobsRepository = new JobsRepository(jobsDir);
-      const watcher = new WatcherService(jobsRepository, watchDir);
+      const watcher = new WatcherService(new JobsService(jobsRepository), watchDir);
 
       await mkFiles('-ok-now', ['test.mp4']);
       await mkFiles('_ok-transform', ['test.mov']);
@@ -117,7 +118,7 @@ describe('Watcher service', () => {
 
     it('should NOT add duplicate started job', async () => {
       const jobsRepository = new JobsRepository(jobsDir);
-      const watcher = new WatcherService(jobsRepository, watchDir);
+      const watcher = new WatcherService(new JobsService(jobsRepository), watchDir);
 
       await mkFiles('-ok-now', ['test.mp4']);
       await mkFiles('_ok-transform', ['test.mov']);

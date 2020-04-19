@@ -36,7 +36,7 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
 
     const jobsRepository = new JobsRepository(environment.jobs.dir);
     const jobsService = new JobsService(jobsRepository, environment.jobs.pollIntervalMs);
-    const watcherService = new WatcherService(jobsRepository, environment.watch.dir, environment.watch.defaultScript);
+    const watcherService = new WatcherService(jobsService, environment.watch.dir, environment.watch.defaultScript);
 
     container.set(JobsRepository, jobsRepository);
     container.set(JobsService, jobsService);

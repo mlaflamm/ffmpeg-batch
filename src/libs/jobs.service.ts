@@ -26,9 +26,21 @@ export class JobsService {
 
   // queueJob
   async queueJob(data: JobData): Promise<Job> {
+
+    // Don't duplicate job
+    const pendingJobs = await this.repository.getIncompleteJobs();
+    const foundJob = pendingJobs.find(
+      job =>
+        job.inputFilePath === data.inputFilePath &&
+        job.outFilePath === data.outFilePath &&
+        job.scriptName === data.scriptName
+    );
+    if (foundJob) {
+      return foundJob;
+    }
+
     const job = await this.repository.addJob(data);
     this.emitter.emit('job', job);
-
     return job;
   }
   // executeJob

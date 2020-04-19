@@ -3,7 +3,7 @@ import { Service } from 'typedi';
 import fs from 'fs';
 import path from 'path';
 
-import { JobsRepository } from './jobs.repository';
+import { JobsService } from './jobs.service';
 
 const debug = namespace('ffmpeg-batch:watcher.service');
 
@@ -87,7 +87,7 @@ export class WatcherService {
   private stopWatchLoop?: () => void = undefined;
 
   constructor(
-    private readonly jobsRepository: JobsRepository,
+    private readonly jobsService: JobsService,
     private readonly watchDir: string,
     private readonly defaultScriptName: string = 'scale.sh'
   ) {}
@@ -115,15 +115,11 @@ export class WatcherService {
       return;
     }
 
-    const pendingJobs = await this.jobsRepository.getIncompleteJobs();
-    const pendingFiles = files.filter(file => !Object.values(pendingJobs).find(job => job?.inputFilePath === file));
-    debug('found %d pending files', pendingFiles.length);
-
-    for (const inputFilePath of pendingFiles) {
+    for (const inputFilePath of files) {
       const ext = path.extname(inputFilePath);
       const baseName = path.basename(inputFilePath).slice(0, -ext.length) + '.mp4';
       const outFilePath = path.join(path.dirname(inputFilePath), '_' + baseName);
-      await this.jobsRepository.addJob({ inputFilePath, outFilePath, scriptName: this.defaultScriptName });
+      await this.jobsService.queueJob({ inputFilePath, outFilePath, scriptName: this.defaultScriptName });
     }
   }
 }

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import ms from 'ms';
 import dotenv from 'dotenv';
 
 export class Environment {
@@ -22,7 +23,7 @@ export class Environment {
 
     const getOsEnv = (key: string): string => (process.env[key] as string) || baseEnv[key] || '';
     const toBool = (value: string): boolean => value === 'true';
-    const toNumber = (value: string): number | undefined => parseInt(value, 10) || undefined;
+    // const toNumber = (value: string): number | undefined => parseInt(value, 10) || undefined;
 
     const developmentEnvironments = ['development', 'preview', 'local', 'test'];
     const devOnly = (key: string, defaultValue: string) => {
@@ -36,12 +37,12 @@ export class Environment {
     this.jobs = {
       enabled: toBool(getOsEnv('JOBS_ENABLED')),
       dir: getOsEnv('JOBS_DIR') || '.temp/jobs',
-      pollIntervalMs: toNumber(getOsEnv('JOBS_POLL_INTERVAL_MS')) || 3 * 60 * 1000,
+      pollIntervalMs: ms(getOsEnv('JOBS_POLL_INTERVAL') || '5m'),
     };
     this.watch = {
       enabled: toBool(getOsEnv('WATCH_ENABLED')),
       dir: getOsEnv('WATCH_DIR') || devOnly('WATCH_DIR', '.temp/watch'),
-      pollIntervalMs: toNumber(getOsEnv('WATCH_POLL_INTERVAL_MS')) || 2 * 60 * 1000,
+      pollIntervalMs: ms(getOsEnv('WATCH_POLL_INTERVAL') || '2m'),
       defaultScript: getOsEnv('WATCH_DEFAULT_SCRIPT') || 'scale.sh',
     };
   }
