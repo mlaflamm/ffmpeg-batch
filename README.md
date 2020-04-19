@@ -1,7 +1,7 @@
 # ffmpeg-batch
 A tool that watch a directory for new video files to scale down. I built this for myself. 
 
-####Docker cheatsheet
+#### Docker cheatsheet
 
 ##### build docker image
 ```
