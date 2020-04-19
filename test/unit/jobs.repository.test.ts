@@ -2,10 +2,12 @@ import fs from 'fs';
 import path from 'path';
 
 import { assert } from 'chai';
+import difference from 'lodash/difference';
 
 import { JobsRepository } from '../../src/libs/jobs.repository';
 import { Job } from '../../src/libs/job.model';
 import * as fixture from '../fixtures';
+import ms = require('ms');
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());
@@ -214,4 +216,39 @@ describe('Job repository', () => {
       assert.deepEqual(await repository.getIncompleteJobs(), []);
     });
   });
+
+  describe('cleanup jobs', () => {
+    it('should cleanup old completed jobs', async () => {
+      const repository = new JobsRepository(testDir);
+      const job = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
+
+      await createJob({ jobId: 'started.job', ...job });
+      await createJob({ jobId: 'stalled.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'todo/old_pending.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'todo/new_pending.job', ...job });
+      await createJob({ jobId: 'error/failed.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'done/recent.job', ...job });
+      await createJob({ jobId: 'done/old.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'done/another_old.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'done/very_old.job', ...job }, new Date(Date.now() - ms('5d')));
+
+      const jobIdsBefore = await repository.getAllJobIds();
+      assert.lengthOf(jobIdsBefore, 9);
+
+      assert.equal(await repository.cleanupJobs(ms('1d')), 1);
+      const jobIdsAfter1DayCleanup = await repository.getAllJobIds();
+      assert.lengthOf(jobIdsAfter1DayCleanup, 8);
+      const diffAfter1DayCleanup = difference(jobIdsBefore, jobIdsAfter1DayCleanup);
+      assert.deepEqual(diffAfter1DayCleanup, ['done/very_old.job'])
+
+      assert.equal(await repository.cleanupJobs(ms('4m')), 2);
+      const jobIdsAfter4MinutesCleanup = await repository.getAllJobIds();
+      assert.lengthOf(jobIdsAfter4MinutesCleanup, 6);
+      const diffAfter4MinutesCleanup = difference(jobIdsAfter1DayCleanup, jobIdsAfter4MinutesCleanup);
+      assert.deepEqual(diffAfter4MinutesCleanup, ['done/another_old.job', 'done/old.job'])
+    });
+
+  });
+
+
 });

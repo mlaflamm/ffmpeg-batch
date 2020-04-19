@@ -1,4 +1,5 @@
 import namespace from 'debug';
+import prettyMs from 'pretty-ms';
 
 import { ContainerInstance } from 'typedi';
 import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
@@ -7,6 +8,7 @@ import { Environment } from '../env';
 import { JobsService } from '../libs/jobs.service';
 import { WatcherService } from '../libs/watcher.service';
 import { JobsRepository } from '../libs/jobs.repository';
+import { pLoop } from '../libs/utils/promise-loop';
 
 const debug = namespace('ffmpeg-batch:jobs.loader');
 
@@ -42,13 +44,18 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
     container.set(JobsService, jobsService);
     container.set(WatcherService, watcherService);
 
-    debug('watch enabled: %s', environment.watch.enabled)
+    debug('watch enabled: %s', environment.watch.enabled);
     if (environment.watch.enabled) {
       await watcherService.process();
       watcherService.start(environment.watch.pollIntervalMs);
     }
 
-    debug('jobs enabled: %s', environment.jobs.enabled)
+    if (environment.jobs.cleanupIntervalMs > 0) {
+      debug('jobs cleanup max age: %s', prettyMs(environment.jobs.cleanupMaxAgeMs));
+      pLoop(() => jobsRepository.cleanupJobs(environment.jobs.cleanupMaxAgeMs), environment.jobs.cleanupIntervalMs);
+    }
+
+    debug('jobs enabled: %s', environment.jobs.enabled);
     if (!environment.jobs.enabled) {
       jobsService.pause();
     }

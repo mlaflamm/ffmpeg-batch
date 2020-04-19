@@ -26,7 +26,6 @@ export class JobsService {
 
   // queueJob
   async queueJob(data: JobData): Promise<Job> {
-
     // Don't duplicate job
     const pendingJobs = await this.repository.getIncompleteJobs();
     const foundJob = pendingJobs.find(
@@ -43,6 +42,7 @@ export class JobsService {
     this.emitter.emit('job', job);
     return job;
   }
+
   // executeJob
   async executeJob(job: Job): Promise<string | undefined> {
     const startedJob = await this.repository.startJob(job.jobId);

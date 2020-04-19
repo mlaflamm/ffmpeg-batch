@@ -6,7 +6,7 @@ import { SuperTest, Test } from 'supertest';
 import { getFixtures, Fixtures, assertStatus, createJob } from '../fixtures';
 import { JobData } from '../../src/libs/job.model';
 import * as path from 'path';
-import { eventually } from '../eventually';
+import { eventually } from '../../src/libs/utils/eventually';
 
 describe('Jobs api routes', () => {
   let fixtures: Fixtures;

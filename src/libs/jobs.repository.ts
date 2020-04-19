@@ -2,6 +2,7 @@ import namespace from 'debug';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import prettyMs from 'pretty-ms';
 
 import { Service } from 'typedi';
 import { Job, JobData } from './job.model';
@@ -196,5 +197,33 @@ export class JobsRepository {
     }
 
     return jobs;
+  }
+
+  // cleanupJobs
+  async cleanupJobs(maxAgeMs: number): Promise<number> {
+    debug('Cleaning up completed jobs older than %s', prettyMs(maxAgeMs));
+
+    const now = Date.now();
+    const completedJobIds = await this.getJobIdsByStatus('done');
+    const cleanupJobs = completedJobIds
+      .map(id => this.getJobPath(id))
+      .map(async jobPath => {
+        const stat = await fs.promises.stat(jobPath);
+        if (now - stat.mtimeMs > maxAgeMs) {
+          return fs.promises
+            .unlink(jobPath)
+            .then(() => 1)
+            .catch(err => {
+              debug('Error cleaning up job "%s": %s', jobPath, err.message);
+              return 0;
+            });
+        } else {
+          return Promise.resolve(0);
+        }
+      });
+
+    const count = await Promise.all(cleanupJobs).then(results => results.reduce((total, result) => total + result, 0));
+    debug('Removed %d completed jobs', count);
+    return count;
   }
 }

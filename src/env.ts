@@ -9,6 +9,8 @@ export class Environment {
     enabled: boolean;
     dir: string;
     pollIntervalMs: number;
+    cleanupIntervalMs: number;
+    cleanupMaxAgeMs: number;
   };
   public watch: {
     enabled: boolean;
@@ -38,6 +40,8 @@ export class Environment {
       enabled: toBool(getOsEnv('JOBS_ENABLED')),
       dir: getOsEnv('JOBS_DIR') || '.temp/jobs',
       pollIntervalMs: ms(getOsEnv('JOBS_POLL_INTERVAL') || '5m'),
+      cleanupIntervalMs: ms(getOsEnv('JOBS_CLEANUP_INTERVAL') || '6h'),
+      cleanupMaxAgeMs: ms(getOsEnv('JOBS_CLEANUP_MAX_AGE') || '5d'),
     };
     this.watch = {
       enabled: toBool(getOsEnv('WATCH_ENABLED')),
