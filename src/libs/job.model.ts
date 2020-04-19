@@ -1,8 +1,5 @@
 import * as zod from 'myzod';
 
-// I want a string with only a list of possible values without using enum or predicate
-// I want to override one field in the schema to make it optional or required
-
 export const JobInputSchema = zod.object({
   inputFilePath: zod.string(),
   outFilePath: zod.string().optional(),
