@@ -1,14 +1,14 @@
 import 'reflect-metadata';
 
-import { assert } from 'chai';
-import { Container } from 'typedi';
-import supertest, { Response } from 'supertest';
-
-import { createAppFramework } from '../src/app';
-import { Job } from '../src/libs/jobs.repository';
 import path from 'path';
 import fs from 'fs';
 import touch from 'touch';
+import supertest, { Response } from 'supertest';
+import { assert } from 'chai';
+import { Container } from 'typedi';
+
+import { createAppFramework } from '../src/app';
+import { Job } from '../src/libs/job.model';
 import { WatcherService } from '../src/libs/watcher.service';
 import { JobsService } from '../src/libs/jobs.service';
 import { Environment } from '../src/env';
@@ -42,7 +42,7 @@ export const getFixtures = async function () {
 
   const release = async () => {
     container.get(WatcherService).stop();
-    await container.get(JobsService).pause();
+    container.get(JobsService).pause();
     Container.reset(container.id);
 
     await fs.promises.rmdir('.test', { recursive: true });

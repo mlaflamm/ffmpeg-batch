@@ -3,7 +3,8 @@ import path from 'path';
 
 import { assert } from 'chai';
 
-import { Job, JobsRepository } from '../../src/libs/jobs.repository';
+import { JobsRepository } from '../../src/libs/jobs.repository';
+import { Job } from '../../src/libs/job.model';
 import * as fixture from '../fixtures';
 
 describe('Job repository', () => {

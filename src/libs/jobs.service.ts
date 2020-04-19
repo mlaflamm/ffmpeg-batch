@@ -4,7 +4,8 @@ import util from 'util';
 import child_process from 'child_process';
 
 import { Service } from 'typedi';
-import { Job, JobsRepository } from './jobs.repository';
+import { Job, JobData } from './job.model';
+import { JobsRepository } from './jobs.repository';
 import { EventEmitter } from 'events';
 
 const exec = util.promisify(child_process.exec);
@@ -23,6 +24,13 @@ export class JobsService {
     this.scriptsDir = './scripts';
   }
 
+  // queueJob
+  async queueJob(data: JobData): Promise<Job> {
+    const job = await this.repository.addJob(data);
+    this.emitter.emit('job', job);
+
+    return job;
+  }
   // executeJob
   async executeJob(job: Job): Promise<string | undefined> {
     const startedJob = await this.repository.startJob(job.jobId);

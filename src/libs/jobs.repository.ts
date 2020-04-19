@@ -4,16 +4,9 @@ import path from 'path';
 import readline from 'readline';
 
 import { Service } from 'typedi';
+import { Job, JobData } from './job.model';
 
 const debug = namespace('ffmpeg-batch:job.repository');
-
-export type Job = { jobId: string } & JobData;
-
-export type JobData = {
-  inputFilePath: string;
-  outFilePath: string;
-  scriptName: string;
-};
 
 async function readFirstLine(pathToFile: string): Promise<string> {
   const readable = fs.createReadStream(pathToFile);
