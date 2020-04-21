@@ -4,8 +4,8 @@ import path from 'path';
 import prettyMs from 'pretty-ms';
 
 import { Service } from 'typedi';
-import { Job, JobData } from './job.model';
-import { readFirstLine } from './utils/read-line';
+import { Job, JobData, JobDetails, JobResult } from './job.model';
+import { readFirstLine, readLastLine } from './utils/read-line';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 
@@ -37,6 +37,31 @@ export class JobsRepository {
       .catch(err => {
         debug('Got error when reading job: "%s"', jobId, err);
       });
+  }
+
+  // getJobResult
+  async getJobResult(jobId: string): Promise<JobResult | undefined> {
+    if (jobId.startsWith('done/') || jobId.startsWith('error/')) {
+      return await readLastLine(this.getJobPath(jobId))
+        .then(line => JSON.parse(line))
+        .catch(err => undefined);
+    }
+  }
+
+  // getJobDetails
+  async getJobDetails(jobId: string): Promise<JobDetails | undefined> {
+    const [jobIdPrefix] = path.basename(jobId).split('_');
+    const createdAt = /^1[0-9]{12}$/.test(jobIdPrefix) ? new Date(+jobIdPrefix) : undefined;
+
+    const [job, result, stat] = await Promise.all([
+      this.getJob(jobId),
+      this.getJobResult(jobId),
+      fs.promises.stat(this.getJobPath(jobId)).catch(err => undefined),
+    ]);
+
+    if (job) {
+      return { createdAt, updatedAt: stat?.mtime, ...job, ...(result || {}) };
+    }
   }
 
   // addJob
@@ -93,7 +118,7 @@ export class JobsRepository {
         .then(stat => stat.size)
         .catch(err => undefined),
     ]);
-    const resultLine = JSON.stringify({ startTime: jobStartTime, durationMs, inputFileSize, outputFileSize });
+    const resultLine = JSON.stringify({ startedAt: new Date(jobStartTime), durationMs, inputFileSize, outputFileSize });
 
     if (err) {
       // job failure, move job file to error directory

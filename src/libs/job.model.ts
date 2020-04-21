@@ -9,3 +9,5 @@ export const JobInputSchema = zod.object({
 export type JobInput = zod.Infer<typeof JobInputSchema>;
 export type JobData = JobInput & { outFilePath: string };
 export type Job = JobData & { jobId: string };
+export type JobResult = { startedAt: Date; durationMs: number; inputFileSize?: number; outputFileSize?: number };
+export type JobDetails = Job & Partial<JobResult> & { createdAt?: Date, updatedAt?: Date };

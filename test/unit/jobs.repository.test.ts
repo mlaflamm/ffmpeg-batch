@@ -216,9 +216,9 @@ describe('Job repository', () => {
 
       const lastLine = await readLastLine(repository.getJobPath(doneJobId));
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'outputFileSize', 'startTime']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'outputFileSize', 'startedAt']);
       assert.isAtLeast(result.durationMs, 5000);
-      assert.equal(result.startTime, startTime);
+      assert.equal(result.startedAt, new Date(startTime).toISOString());
       assert.equal(result.inputFileSize, 100);
       assert.equal(result.outputFileSize, 25);
     });
@@ -235,9 +235,9 @@ describe('Job repository', () => {
 
       const lastLine = await readLastLine(repository.getJobPath(errorJobId));
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'startTime']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'startedAt']);
       assert.isAtLeast(result.durationMs, 5000);
-      assert.equal(result.startTime, startTime);
+      assert.equal(result.startedAt, new Date(startTime).toISOString());
       assert.equal(result.inputFileSize, 100);
     });
   });

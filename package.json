@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/mlaflamm/ffmpeg-batch#readme",
   "dependencies": {
+    "@types/filesize": "^5.0.0",
     "body-parser": "^1.19.0",
     "class-transformer": "^0.2.3",
     "class-validator": "0.10.1",
@@ -29,6 +30,7 @@
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "filesize": "^6.1.0",
     "http-errors": "^1.7.3",
     "lodash": "^4.17.15",
     "microframework-w3tec": "^0.6.3",

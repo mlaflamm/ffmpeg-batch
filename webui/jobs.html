@@ -68,7 +68,7 @@
 
       <script>
         const app = document.getElementById('app');
-        pLoop(() => renderApp(), 30000);
+        pLoop(() => renderApp(), 60000);
 
         function renderApp() {
           const jobApi = new URL(document.location.origin + '/api/jobs');
@@ -131,7 +131,7 @@
             });
         }
 
-        const keyIsDateField = key => ['startDate', 'endDate', 'createdAt'].includes(key);
+        const keyIsDateField = key => ['startedAt', 'updatedAt', 'createdAt'].includes(key);
 
         const formatDateString = str => {
           return new Date(str).toLocaleString();

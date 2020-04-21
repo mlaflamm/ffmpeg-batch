@@ -1,8 +1,12 @@
+import * as path from 'path';
+import prettyMs from 'pretty-ms';
+import filesize from 'filesize';
+
 import { JsonController, Get, QueryParam, Post, Body, Param, OnUndefined } from 'routing-controllers';
 import { JobsRepository } from '../../libs/jobs.repository';
-import * as path from 'path';
-import { Job, JobInputSchema } from '../../libs/job.model';
+import { Job, JobDetails, JobInputSchema } from '../../libs/job.model';
 import { JobsService } from '../../libs/jobs.service';
+import { Environment } from '../../env';
 
 type JobSummary = {
   name: string;
@@ -10,18 +14,21 @@ type JobSummary = {
 };
 
 type JobView = Job & JobSummary;
+type JobDetailsView = JobDetails & JobSummary & { duration?: string };
 
 const StatusMapping: Partial<Record<string, string>> = {
   '.': 'started',
 };
 
-const jobIdToSummary = (jobId: string): JobSummary => {
-  const name = path.basename(jobId).replace(/\.job$/g, '');
+const jobIdtoStatus = (jobId: string): string => {
   const status = path.dirname(jobId);
+  return StatusMapping[status] || status;
+};
 
+const jobIdToSummary = (jobId: string): JobSummary => {
   return {
-    name,
-    status: StatusMapping[status] || status,
+    name: path.basename(jobId).replace(/\.job$/g, ''),
+    status: jobIdtoStatus(jobId),
   };
 };
 
@@ -29,9 +36,28 @@ const jobToView = (job: Job): JobView => {
   return { ...jobIdToSummary(job.jobId), ...job };
 };
 
+const jobDetailsToView = (job: JobDetails): JobDetailsView => {
+  // TODO: Cleanup types and conversions
+  return {
+    ...jobIdToSummary(job.jobId),
+    createdAt: undefined,
+    startedAt: undefined,
+    updatedAt: undefined,
+    ...job,
+    inputFileSize: job.inputFileSize ? filesize(job.inputFileSize) : undefined,
+    outputFileSize: job.outputFileSize ? filesize(job.outputFileSize): undefined,
+    duration: job.durationMs ? prettyMs(job.durationMs) : undefined,
+    durationMs: undefined,
+  } as any;
+};
+
 @JsonController('/api/jobs')
 export class JobsController {
-  constructor(private readonly jobsService: JobsService, private readonly jobsRepository: JobsRepository) {}
+  constructor(
+    private readonly env: Environment,
+    private readonly jobsService: JobsService,
+    private readonly jobsRepository: JobsRepository
+  ) {}
 
   @OnUndefined(404)
   @Get('/:id')
@@ -47,11 +73,24 @@ export class JobsController {
 
   @Get('/')
   public async getJobs(@QueryParam('status') status?: string) {
-    const summaries = (await this.jobsRepository.getAllJobIds())
+    const allJobIds = status
+      ? await this.jobsRepository.getAllJobIds().then(ids => ids.filter(id => jobIdtoStatus(id) === status))
+      : await this.jobsRepository.getAllJobIds();
+    if (this.env.jobs.detailsList) {
+      // TODO: Use p-map instead to reduce fs concurrency!!!
+      const jobs = await Promise.all(
+        allJobIds.map(id => this.jobsRepository.getJobDetails(id).then(details => details && jobDetailsToView(details)))
+      );
+      return jobs
+        .filter(j => !!j)
+        .sort((a, b) => (a && b ? a.name.localeCompare(b.name) : 0))
+        .reverse();
+    }
+
+    return allJobIds
       .map(jobIdToSummary)
       .sort((a, b) => a.name.localeCompare(b.name))
       .reverse();
-    return status ? summaries.filter(id => id.status === status) : summaries;
   }
 
   @Post('/')

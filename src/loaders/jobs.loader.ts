@@ -46,7 +46,6 @@ export function jobsLoader(environment: Environment, container: ContainerInstanc
 
     debug('watch enabled: %s', environment.watch.enabled);
     if (environment.watch.enabled) {
-      await watcherService.process();
       watcherService.start(environment.watch.pollIntervalMs);
     }
 

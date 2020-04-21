@@ -57,10 +57,10 @@ some %% dir/some %% file
       assert.equal(jobOutput.slice(0, -lastLine.length), expected);
 
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startTime']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startedAt']);
       assert.isAtLeast(result.durationMs, 1000);
-      assert.isAtLeast(result.startTime, Date.now() - 2000);
-      assert.isAtMost(result.startTime, Date.now());
+      assert.isAtLeast(new Date(result.startedAt).getTime(), Date.now() - 2000);
+      assert.isAtMost(new Date(result.startedAt).getTime(), Date.now());
     });
 
     it('should execute failed job', async () => {
@@ -84,7 +84,7 @@ some %% dir/some %% file
 
       const lastLine = await readLastLine(repository.getJobPath(errorJobId));
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startTime']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startedAt']);
 
     });
   });
