@@ -32,6 +32,7 @@ export const createJob = async (jobDir: string, job: Job, time: Date = new Date(
   const jobPath = path.join(jobDir, job.jobId);
   await fs.promises.writeFile(jobPath, JSON.stringify({ ...job, jobId: undefined }));
   await touch(jobPath, { time });
+  return job;
 };
 
 export const getFixtures = async function () {

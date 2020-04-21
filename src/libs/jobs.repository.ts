@@ -1,34 +1,13 @@
 import namespace from 'debug';
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
 import prettyMs from 'pretty-ms';
 
 import { Service } from 'typedi';
 import { Job, JobData } from './job.model';
+import { readFirstLine } from './utils/read-line';
 
 const debug = namespace('ffmpeg-batch:job.repository');
-
-async function readFirstLine(pathToFile: string): Promise<string> {
-  const readable = fs.createReadStream(pathToFile);
-  const reader = readline.createInterface({ input: readable });
-  const line = await new Promise<string>((resolve, reject) => {
-    const onError = (err: Error) => {
-      reader.close();
-      readable.destroy();
-      reject(err);
-    };
-    readable.once('error', onError);
-    reader
-      .once('line', (line: string) => {
-        reader.close();
-        readable.close();
-        resolve(line);
-      })
-      .once('error', onError);
-  });
-  return line;
-}
 
 @Service()
 export class JobsRepository {
@@ -100,19 +79,36 @@ export class JobsRepository {
   }
 
   // completeJob
-  async completeJob(jobId: string, err?: Error): Promise<string> {
+  async completeJob(job: Job, jobStartTime: number, err?: Error): Promise<string> {
+    const jobId = job.jobId;
     const runningJobFilePath = path.join(this.jobsDir, path.basename(jobId));
+    const durationMs = Date.now() - jobStartTime;
+    const [inputFileSize, outputFileSize] = await Promise.all([
+      fs.promises
+        .stat(job.inputFilePath)
+        .then(stat => stat.size)
+        .catch(err => undefined),
+      fs.promises
+        .stat(job.outFilePath)
+        .then(stat => stat.size)
+        .catch(err => undefined),
+    ]);
+    const resultLine = JSON.stringify({ startTime: jobStartTime, durationMs, inputFileSize, outputFileSize });
 
     if (err) {
-      // error, move job file to error directory
-      debug('Error running "%s"', path.basename(jobId), err);
+      // job failure, move job file to error directory
+      debug('Job failure (%s) "%s": %s', prettyMs(durationMs), path.basename(jobId), err.message);
+      await fs.promises.appendFile(runningJobFilePath, '\n' + resultLine);
+
       const errorJobFilePath = path.join(this.errorDir, path.basename(jobId));
       await fs.promises.rename(runningJobFilePath, errorJobFilePath);
       return path.join('error', path.basename(jobId));
     }
 
-    // done, move job file to done directory
-    debug('Done running "%s"', path.basename(jobId));
+    // job completed, move job file to done directory
+    debug('Job completed (%s) "%s"', prettyMs(durationMs), path.basename(jobId));
+    await fs.promises.appendFile(runningJobFilePath, '\n' + resultLine);
+
     const doneJobFilePath = path.join(this.doneDir, path.basename(jobId));
     await fs.promises.rename(runningJobFilePath, doneJobFilePath);
     return path.join('done', path.basename(jobId));

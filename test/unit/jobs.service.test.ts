@@ -6,6 +6,7 @@ import { assert } from 'chai';
 import { JobsService } from '../../src/libs/jobs.service';
 import { JobsRepository } from '../../src/libs/jobs.repository';
 import { randomString } from '../fixtures';
+import { readLastLine } from '../../src/libs/utils/read-line';
 
 describe('Job service', () => {
   const testDir = path.join('.test', randomString());
@@ -36,9 +37,8 @@ describe('Job service', () => {
 
       // Verify job done
       assert.equal(doneJobId, job.jobId.replace('todo', 'done'));
-      assert.isNotOk(fs.existsSync(path.join(testDir, job.jobId)));
-      assert.isOk(fs.existsSync(path.join(testDir, doneJobId)));
-      const jobData = await fs.promises.readFile(path.join(testDir, doneJobId), { encoding: 'utf8' });
+      assert.isNotOk(fs.existsSync(repository.getJobPath(job.jobId)));
+      assert.isOk(fs.existsSync(repository.getJobPath(doneJobId)));
 
       const expected = `{"inputFilePath":"+5+0.2+0+","outFilePath":"some % dir/some % file","scriptName":"test.sh"}
 
@@ -49,8 +49,18 @@ some %% dir/some %% file
 2
 3
 4
+
 `;
-      assert.equal(jobData, expected);
+
+      const jobOutput = await fs.promises.readFile(repository.getJobPath(doneJobId), { encoding: 'utf8' });
+      const lastLine = await readLastLine(repository.getJobPath(doneJobId));
+      assert.equal(jobOutput.slice(0, -lastLine.length), expected);
+
+      const result = JSON.parse(lastLine);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startTime']);
+      assert.isAtLeast(result.durationMs, 1000);
+      assert.isAtLeast(result.startTime, Date.now() - 2000);
+      assert.isAtMost(result.startTime, Date.now());
     });
 
     it('should execute failed job', async () => {
@@ -69,8 +79,13 @@ some %% dir/some %% file
 
       // Verify job error
       assert.equal(errorJobId, job.jobId.replace('todo', 'error'));
-      assert.isNotOk(await fs.existsSync(path.join(testDir, job.jobId)));
-      assert.isOk(await fs.existsSync(path.join(testDir, errorJobId)));
+      assert.isNotOk(fs.existsSync(repository.getJobPath(job.jobId)));
+      assert.isOk(fs.existsSync(repository.getJobPath(errorJobId)));
+
+      const lastLine = await readLastLine(repository.getJobPath(errorJobId));
+      const result = JSON.parse(lastLine);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startTime']);
+
     });
   });
 });

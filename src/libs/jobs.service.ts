@@ -24,6 +24,7 @@ export class JobsService {
     this.scriptsDir = './scripts';
   }
 
+  // TODO: test me!
   // queueJob
   async queueJob(data: JobData): Promise<Job> {
     // Don't duplicate job
@@ -52,13 +53,14 @@ export class JobsService {
     }
 
     // Execute script
+    const startTime = Date.now();
     const jobFilePath = this.repository.getJobPath(startedJob.jobId);
     const script = path.join(this.scriptsDir, startedJob.scriptName);
     const command = `${script} "${startedJob.inputFilePath}" "${startedJob.outFilePath}" >> "${jobFilePath}"`;
     debug(command);
     return exec(command)
-      .then(() => this.repository.completeJob(startedJob.jobId))
-      .catch(err => this.repository.completeJob(startedJob.jobId, err));
+      .then(() => this.repository.completeJob(startedJob, startTime))
+      .catch(err => this.repository.completeJob(startedJob, startTime, err));
   }
 
   public async getNextJob(): Promise<Job> {

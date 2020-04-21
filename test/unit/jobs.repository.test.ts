@@ -8,6 +8,7 @@ import { JobsRepository } from '../../src/libs/jobs.repository';
 import { Job } from '../../src/libs/job.model';
 import * as fixture from '../fixtures';
 import ms = require('ms');
+import { readLastLine } from '../../src/libs/utils/read-line';
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());
@@ -192,6 +193,55 @@ describe('Job repository', () => {
     });
   });
 
+  describe('complete job', () => {
+    before(async () => {
+      await fs.promises.writeFile('input', ''.padEnd(100));
+      await fs.promises.writeFile('output', ''.padEnd(25));
+    });
+
+    after(async () => {
+      await fs.promises.unlink('input');
+      await fs.promises.unlink('output');
+    });
+
+    it('should move completed job to done directory', async () => {
+      const repository = new JobsRepository(testDir);
+      const jobData = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
+      const job = await createJob({ jobId: 'job99.job', ...jobData });
+
+      const startTime = Date.now() - 5000;
+      const doneJobId = await repository.completeJob(job, startTime);
+      assert.equal(doneJobId, 'done/job99.job');
+      assert.deepEqual(await repository.getAllJobIds(), [doneJobId]);
+
+      const lastLine = await readLastLine(repository.getJobPath(doneJobId));
+      const result = JSON.parse(lastLine);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'outputFileSize', 'startTime']);
+      assert.isAtLeast(result.durationMs, 5000);
+      assert.equal(result.startTime, startTime);
+      assert.equal(result.inputFileSize, 100);
+      assert.equal(result.outputFileSize, 25);
+    });
+
+    it('should move failed job to error directory', async () => {
+      const repository = new JobsRepository(testDir);
+      const jobData = { inputFilePath: 'input', outFilePath: 'unknown', scriptName: 'test.sh' };
+      const job = await createJob({ jobId: 'job99.job', ...jobData });
+
+      const startTime = Date.now() - 5000;
+      const errorJobId = await repository.completeJob(job, startTime, new Error());
+      assert.equal(errorJobId, 'error/job99.job');
+      assert.deepEqual(await repository.getAllJobIds(), [errorJobId]);
+
+      const lastLine = await readLastLine(repository.getJobPath(errorJobId));
+      const result = JSON.parse(lastLine);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'startTime']);
+      assert.isAtLeast(result.durationMs, 5000);
+      assert.equal(result.startTime, startTime);
+      assert.equal(result.inputFileSize, 100);
+    });
+  });
+
   describe('list incomplete jobs', () => {
     it('should returns incomplete jobs including started', async () => {
       const repository = new JobsRepository(testDir);
@@ -239,16 +289,13 @@ describe('Job repository', () => {
       const jobIdsAfter1DayCleanup = await repository.getAllJobIds();
       assert.lengthOf(jobIdsAfter1DayCleanup, 8);
       const diffAfter1DayCleanup = difference(jobIdsBefore, jobIdsAfter1DayCleanup);
-      assert.deepEqual(diffAfter1DayCleanup, ['done/very_old.job'])
+      assert.deepEqual(diffAfter1DayCleanup, ['done/very_old.job']);
 
       assert.equal(await repository.cleanupJobs(ms('4m')), 2);
       const jobIdsAfter4MinutesCleanup = await repository.getAllJobIds();
       assert.lengthOf(jobIdsAfter4MinutesCleanup, 6);
       const diffAfter4MinutesCleanup = difference(jobIdsAfter1DayCleanup, jobIdsAfter4MinutesCleanup);
-      assert.deepEqual(diffAfter4MinutesCleanup, ['done/another_old.job', 'done/old.job'])
+      assert.deepEqual(diffAfter4MinutesCleanup, ['done/another_old.job', 'done/old.job']);
     });
-
   });
-
-
 });
