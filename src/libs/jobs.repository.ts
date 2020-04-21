@@ -5,7 +5,8 @@ import prettyMs from 'pretty-ms';
 
 import { Service } from 'typedi';
 import { Job, JobData, JobDetails, JobResult } from './job.model';
-import { readFirstLine, readLastLine } from './utils/read-line';
+import { readFirstLine } from './utils/read-first-line';
+import { readLastLine } from './utils/read-last-line';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 

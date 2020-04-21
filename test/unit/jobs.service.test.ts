@@ -6,7 +6,7 @@ import { assert } from 'chai';
 import { JobsService } from '../../src/libs/jobs.service';
 import { JobsRepository } from '../../src/libs/jobs.repository';
 import { randomString } from '../fixtures';
-import { readLastLine } from '../../src/libs/utils/read-line';
+import { readLastLine } from '../../src/libs/utils/read-last-line';
 
 describe('Job service', () => {
   const testDir = path.join('.test', randomString());

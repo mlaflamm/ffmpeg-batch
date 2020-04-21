@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from 'path';
+import ms = require('ms');
 
 import { assert } from 'chai';
 import difference from 'lodash/difference';
 
+import { readLastLine } from '../../src/libs/utils/read-last-line';
 import { JobsRepository } from '../../src/libs/jobs.repository';
 import { Job } from '../../src/libs/job.model';
 import * as fixture from '../fixtures';
-import ms = require('ms');
-import { readLastLine } from '../../src/libs/utils/read-line';
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());
