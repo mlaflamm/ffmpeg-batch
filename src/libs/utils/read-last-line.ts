@@ -2,6 +2,10 @@ import fs from 'fs';
 
 const sliceFile = require('slice-file');
 
+// Promisified version of the `last-line` npm module with proper file close + `slice-file` error workaround
+// https://www.npmjs.com/package/last-line
+// https://github.com/dweinstein/node-last-line
+
 export async function readLastLine(pathToFile: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     let line: string | undefined;
@@ -21,8 +25,8 @@ export async function readLastLine(pathToFile: string): Promise<string> {
       })
       .on('error', function (err: any) {
         if (err instanceof Buffer) {
-          // TODO: create a PR fix
           // Work around 'slice-file' bug
+          // TODO: create a 'slice-file' PR fix
           line = err.toString();
           return;
         }

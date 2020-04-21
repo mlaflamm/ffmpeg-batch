@@ -1,20 +1,31 @@
 import * as path from 'path';
+import pMap from 'p-map';
 import prettyMs from 'pretty-ms';
 import filesize from 'filesize';
 
 import { JsonController, Get, QueryParam, Post, Body, Param, OnUndefined } from 'routing-controllers';
 import { JobsRepository } from '../../libs/jobs.repository';
-import { Job, JobDetails, JobInputSchema } from '../../libs/job.model';
+import { JobDetails, JobInputSchema } from '../../libs/job.model';
 import { JobsService } from '../../libs/jobs.service';
 import { Environment } from '../../env';
 
 type JobSummary = {
+  id: string;
   name: string;
   status: string;
 };
 
-type JobView = Job & JobSummary;
-type JobDetailsView = JobDetails & JobSummary & { duration?: string };
+type JobView = JobSummary & {
+  createdAt?: Date;
+  startedAt?: Date;
+  updatedAt?: Date;
+  inputFile: string;
+  outputFile: string;
+  script: string;
+  executeDuration?: string;
+  inputFileSize?: string;
+  outputFileSize?: string;
+};
 
 const StatusMapping: Partial<Record<string, string>> = {
   '.': 'started',
@@ -29,26 +40,24 @@ const jobIdToSummary = (jobId: string): JobSummary => {
   return {
     name: path.basename(jobId).replace(/\.job$/g, ''),
     status: jobIdtoStatus(jobId),
+    id: jobId,
   };
 };
 
-const jobToView = (job: Job): JobView => {
-  return { ...jobIdToSummary(job.jobId), ...job };
-};
-
-const jobDetailsToView = (job: JobDetails): JobDetailsView => {
-  // TODO: Cleanup types and conversions
+const jobToView = (job: JobDetails): JobView => {
+  // TODO: Perform file sizes & duration pretty format on the front end
   return {
     ...jobIdToSummary(job.jobId),
-    createdAt: undefined,
-    startedAt: undefined,
-    updatedAt: undefined,
-    ...job,
+    createdAt: job.createdAt,
+    startedAt: job.startedAt,
+    updatedAt: job.updatedAt,
+    inputFile: job.inputFilePath,
+    outputFile: job.outFilePath,
+    script: job.scriptName,
     inputFileSize: job.inputFileSize ? filesize(job.inputFileSize) : undefined,
-    outputFileSize: job.outputFileSize ? filesize(job.outputFileSize): undefined,
-    duration: job.durationMs ? prettyMs(job.durationMs) : undefined,
-    durationMs: undefined,
-  } as any;
+    outputFileSize: job.outputFileSize ? filesize(job.outputFileSize) : undefined,
+    executeDuration: job.durationMs ? prettyMs(job.durationMs) : undefined,
+  };
 };
 
 @JsonController('/api/jobs')
@@ -73,23 +82,25 @@ export class JobsController {
 
   @Get('/')
   public async getJobs(@QueryParam('status') status?: string) {
-    const allJobIds = status
+    const jobIds = status
       ? await this.jobsRepository.getAllJobIds().then(ids => ids.filter(id => jobIdtoStatus(id) === status))
       : await this.jobsRepository.getAllJobIds();
-    if (this.env.jobs.detailsList) {
-      // TODO: Use p-map instead to reduce fs concurrency!!!
-      const jobs = await Promise.all(
-        allJobIds.map(id => this.jobsRepository.getJobDetails(id).then(details => details && jobDetailsToView(details)))
-      );
-      return jobs
-        .filter(j => !!j)
-        .sort((a, b) => (a && b ? a.name.localeCompare(b.name) : 0))
+
+    if (!this.env.jobs.detailsList) {
+      return jobIds
+        .map(jobIdToSummary)
+        .sort((a, b) => a.name.localeCompare(b.name))
         .reverse();
     }
 
-    return allJobIds
-      .map(jobIdToSummary)
-      .sort((a, b) => a.name.localeCompare(b.name))
+    const jobs = await pMap(
+      jobIds,
+      id => this.jobsRepository.getJobDetails(id).then(details => details && jobToView(details)),
+      { concurrency: 10 }
+    );
+    return jobs
+      .filter(j => !!j)
+      .sort((a, b) => (a?.updatedAt && b?.updatedAt ? a.updatedAt.getTime() - b.updatedAt.getTime() : 0))
       .reverse();
   }
 
@@ -97,8 +108,8 @@ export class JobsController {
   public createJob(@Body() body: unknown) {
     const jobInput = JobInputSchema.parse(body);
 
-    // TODO: validate inputFilePath?
-    // TODO: validate outFilePath directory?
+    // TODO: validate inputFilePath exists?
+    // TODO: validate outFilePath directory exists?
     const outFilePath =
       jobInput.outFilePath ||
       (() => {

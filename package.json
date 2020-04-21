@@ -37,6 +37,7 @@
     "morgan": "^1.10.0",
     "ms": "^2.1.2",
     "myzod": "0.0.32",
+    "p-map": "^4.0.0",
     "pretty-ms": "^6.0.1",
     "reflect-metadata": "^0.1.13",
     "routing-controllers": "^0.8.1-alpha.2",

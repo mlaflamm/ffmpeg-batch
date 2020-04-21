@@ -36,7 +36,7 @@ export class JobsRepository {
     return await readFirstLine(this.getJobPath(jobId))
       .then(line => ({ jobId, ...JSON.parse(line) }))
       .catch(err => {
-        debug('Got error when reading job: "%s"', jobId, err);
+        debug('Error reading job "%s": %s', jobId, err.message);
       });
   }
 
