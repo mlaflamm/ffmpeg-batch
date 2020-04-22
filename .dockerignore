@@ -2,7 +2,8 @@
 coverage
 .nyc_output
 
-# Test output directories
+# Test directories
+test
 .test
 .temp
 

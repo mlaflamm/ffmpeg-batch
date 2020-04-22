@@ -1,4 +1,5 @@
 import * as zod from 'myzod';
+import { VideoStreamInfo } from './utils/ffprobe';
 
 export const JobInputSchema = zod.object({
   inputFilePath: zod.string(),
@@ -8,6 +9,6 @@ export const JobInputSchema = zod.object({
 
 export type JobInput = zod.Infer<typeof JobInputSchema>;
 export type JobData = JobInput & { outFilePath: string };
-export type Job = JobData & { jobId: string };
+export type Job = JobData & { jobId: string, inputFileInfo?: VideoStreamInfo };
 export type JobResult = { startedAt: Date; durationMs: number; inputFileSize?: number; outputFileSize?: number };
 export type JobDetails = Job & Partial<JobResult> & { createdAt?: Date, updatedAt?: Date };

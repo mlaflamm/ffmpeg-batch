@@ -8,6 +8,7 @@ import { JobsRepository } from '../../libs/jobs.repository';
 import { JobDetails, JobInputSchema } from '../../libs/job.model';
 import { JobsService } from '../../libs/jobs.service';
 import { Environment } from '../../env';
+import { VideoStreamInfo } from '../../libs/utils/ffprobe';
 
 type JobSummary = {
   id: string;
@@ -22,9 +23,10 @@ type JobView = JobSummary & {
   inputFile: string;
   outputFile: string;
   script: string;
-  executeDuration?: string;
+  duration?: string;
   inputFileSize?: string;
   outputFileSize?: string;
+  inputFileInfo?: VideoStreamInfo;
 };
 
 const StatusMapping: Partial<Record<string, string>> = {
@@ -45,18 +47,24 @@ const jobIdToSummary = (jobId: string): JobSummary => {
 };
 
 const jobToView = (job: JobDetails): JobView => {
-  // TODO: Perform file sizes & duration pretty format on the front end
+  // TODO: Perform pretty format on the front end (e.g. file sizes, duration, input file info)
+
   return {
     ...jobIdToSummary(job.jobId),
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,
+    inputFileInfo: job.inputFileInfo && {
+      ...job.inputFileInfo,
+      duration: job?.inputFileInfo?.duration && prettyMs(1000 * Math.floor(+job.inputFileInfo.duration)),
+      bit_rate: job?.inputFileInfo?.bit_rate && Math.floor(+job.inputFileInfo.bit_rate / 1000) + ' kb',
+    },
     inputFile: job.inputFilePath,
     outputFile: job.outFilePath,
     script: job.scriptName,
     inputFileSize: job.inputFileSize ? filesize(job.inputFileSize) : undefined,
     outputFileSize: job.outputFileSize ? filesize(job.outputFileSize) : undefined,
-    executeDuration: job.durationMs ? prettyMs(job.durationMs) : undefined,
+    duration: job.durationMs ? prettyMs(job.durationMs) : undefined,
   };
 };
 

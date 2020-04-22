@@ -7,6 +7,7 @@ import { Service } from 'typedi';
 import { Job, JobData } from './job.model';
 import { JobsRepository } from './jobs.repository';
 import { EventEmitter } from 'events';
+import { extractVideoInfo } from './utils/ffprobe';
 
 const exec = util.promisify(child_process.exec);
 
@@ -39,7 +40,8 @@ export class JobsService {
       return foundJob;
     }
 
-    const job = await this.repository.addJob(data);
+    const inputFileInfo = await extractVideoInfo(data.inputFilePath).catch(() => undefined);
+    const job = await this.repository.addJob(data, inputFileInfo);
     this.emitter.emit('job', job);
     return job;
   }

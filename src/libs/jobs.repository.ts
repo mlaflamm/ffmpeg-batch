@@ -7,6 +7,7 @@ import { Service } from 'typedi';
 import { Job, JobData, JobDetails, JobResult } from './job.model';
 import { readFirstLine } from './utils/read-first-line';
 import { readLastLine } from './utils/read-last-line';
+import { VideoStreamInfo } from './utils/ffprobe';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 
@@ -66,13 +67,13 @@ export class JobsRepository {
   }
 
   // addJob
-  async addJob(job: JobData): Promise<Job> {
+  async addJob(job: JobData, inputFileInfo?: VideoStreamInfo): Promise<Job> {
     const jobId = path.join(
       'todo',
       new Date().getTime() + '_' + path.basename(path.dirname(job.inputFilePath)) + '.job'
     );
-    await fs.promises.writeFile(path.join(this.jobsDir, jobId), JSON.stringify(job));
-    return { jobId, ...job };
+    await fs.promises.writeFile(path.join(this.jobsDir, jobId), JSON.stringify({ ...job, inputFileInfo }));
+    return { jobId, ...job, inputFileInfo };
   }
 
   // startJob
