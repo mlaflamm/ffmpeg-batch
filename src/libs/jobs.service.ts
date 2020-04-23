@@ -4,10 +4,11 @@ import util from 'util';
 import child_process from 'child_process';
 
 import { Service } from 'typedi';
-import { Job, JobData } from './job.model';
+import { Job, JobData, VideoFileInfo } from './job.model';
 import { JobsRepository } from './jobs.repository';
 import { EventEmitter } from 'events';
 import { extractVideoInfo } from './utils/ffprobe';
+import fs from 'fs';
 
 const exec = util.promisify(child_process.exec);
 
@@ -25,7 +26,18 @@ export class JobsService {
     this.scriptsDir = './scripts';
   }
 
-  // TODO: test me!
+  private async getVideoFileInfo(
+    filePath: string,
+    opts: { failIfFileMissing: boolean }
+  ): Promise<VideoFileInfo | undefined> {
+    const inputFileSize = await fs.promises
+      .stat(filePath)
+      .then(stat => (stat.isFile() ? stat.size : Promise.reject(new Error(`${filePath} is not a file!`))))
+      .catch(err => (opts.failIfFileMissing ? Promise.reject(err) : undefined));
+    const inputFileInfo = await extractVideoInfo(filePath).catch(() => undefined);
+    return inputFileInfo || inputFileSize ? { ...(inputFileInfo || {}), fileSize: inputFileSize } : undefined;
+  }
+
   // queueJob
   async queueJob(data: JobData): Promise<Job> {
     // Don't duplicate job
@@ -40,7 +52,7 @@ export class JobsService {
       return foundJob;
     }
 
-    const inputFileInfo = await extractVideoInfo(data.inputFilePath).catch(() => undefined);
+    const inputFileInfo = await this.getVideoFileInfo(data.inputFilePath, { failIfFileMissing: true });
     const job = await this.repository.addJob(data, inputFileInfo);
     this.emitter.emit('job', job);
     return job;
@@ -61,10 +73,17 @@ export class JobsService {
     const command = `${script} "${startedJob.inputFilePath}" "${startedJob.outFilePath}" >> "${jobFilePath}"`;
     debug(command);
     return exec(command)
-      .then(() => this.repository.completeJob(startedJob, startTime))
-      .catch(err => this.repository.completeJob(startedJob, startTime, err));
+      .then(async () =>
+        this.repository.completeJob(
+          startedJob,
+          startTime,
+          await this.getVideoFileInfo(startedJob.outFilePath, { failIfFileMissing: false })
+        )
+      )
+      .catch(async err => this.repository.completeJob(startedJob, startTime, undefined, err));
   }
 
+  // TODO: test me!
   public async getNextJob(): Promise<Job> {
     await this.pauseIfRequired();
     const previousJob = await this.repository.getNextJob();

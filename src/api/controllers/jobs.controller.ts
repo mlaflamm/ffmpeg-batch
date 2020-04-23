@@ -5,10 +5,9 @@ import filesize from 'filesize';
 
 import { JsonController, Get, QueryParam, Post, Body, Param, OnUndefined } from 'routing-controllers';
 import { JobsRepository } from '../../libs/jobs.repository';
-import { JobDetails, JobInputSchema } from '../../libs/job.model';
+import { JobDetails, JobInputSchema, VideoFileInfo } from '../../libs/job.model';
 import { JobsService } from '../../libs/jobs.service';
 import { Environment } from '../../env';
-import { VideoStreamInfo } from '../../libs/utils/ffprobe';
 
 type JobSummary = {
   id: string;
@@ -24,10 +23,18 @@ type JobView = JobSummary & {
   outputFile: string;
   script: string;
   duration?: string;
-  inputFileSize?: string;
-  outputFileSize?: string;
-  inputFileInfo?: VideoStreamInfo;
+  inputFileInfo?: FileInfoView;
+  outputFileInfo?: FileInfoView;
 };
+
+type FileInfoView = Partial<{
+  fileSize: string;
+  codec_name: string;
+  resolution: string;
+  display_aspect_ratio: string;
+  duration: string;
+  bit_rate: string;
+}>;
 
 const StatusMapping: Partial<Record<string, string>> = {
   '.': 'started',
@@ -46,25 +53,30 @@ const jobIdToSummary = (jobId: string): JobSummary => {
   };
 };
 
-const jobToView = (job: JobDetails): JobView => {
-  // TODO: Perform pretty format on the front end (e.g. file sizes, duration, input file info)
+const fileInfoToView = (info: VideoFileInfo): FileInfoView => {
+  // TODO: Perform pretty format on the front end (e.g. file sizes, duration)
+  return {
+    codec_name: info.codec_name,
+    resolution: info.width && info.width ? info.width + 'x' + info.height : undefined,
+    // display_aspect_ratio: info.display_aspect_ratio,
+    bit_rate: info.bit_rate && Math.floor(+info.bit_rate / 1000) + ' kb',
+    duration: info.duration && prettyMs(1000 * Math.floor(+info.duration)),
+    fileSize: info.fileSize ? filesize(info.fileSize) : undefined,
+  };
+};
 
+const jobToView = (job: JobDetails): JobView => {
   return {
     ...jobIdToSummary(job.jobId),
     createdAt: job.createdAt,
     startedAt: job.startedAt,
     updatedAt: job.updatedAt,
-    inputFileInfo: job.inputFileInfo && {
-      ...job.inputFileInfo,
-      duration: job?.inputFileInfo?.duration && prettyMs(1000 * Math.floor(+job.inputFileInfo.duration)),
-      bit_rate: job?.inputFileInfo?.bit_rate && Math.floor(+job.inputFileInfo.bit_rate / 1000) + ' kb',
-    },
     inputFile: job.inputFilePath,
     outputFile: job.outFilePath,
+    inputFileInfo: job.inputFileInfo && fileInfoToView(job.inputFileInfo),
+    outputFileInfo: job.outputFileInfo && fileInfoToView(job.outputFileInfo),
     script: job.scriptName,
-    inputFileSize: job.inputFileSize ? filesize(job.inputFileSize) : undefined,
-    outputFileSize: job.outputFileSize ? filesize(job.outputFileSize) : undefined,
-    duration: job.durationMs ? prettyMs(job.durationMs) : undefined,
+    duration: job.durationMs ? prettyMs(job.durationMs) : undefined, // TODO: format in front end
   };
 };
 

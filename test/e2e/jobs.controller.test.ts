@@ -7,15 +7,17 @@ import { getFixtures, Fixtures, assertStatus, createJob } from '../fixtures';
 import { JobData } from '../../src/libs/job.model';
 import * as path from 'path';
 import { eventually } from '../../src/libs/utils/eventually';
+import touch = require('touch');
 
 describe('Jobs api routes', () => {
   let fixtures: Fixtures;
   let request: SuperTest<Test>;
-  let jobDir: string;
+  let testDir: string, jobDir: string;
 
   before(async () => {
     fixtures = await getFixtures();
     request = fixtures.request;
+    testDir = fixtures.testDir;
     jobDir = fixtures.env.jobs.dir;
   });
 
@@ -149,15 +151,19 @@ describe('Jobs api routes', () => {
 
   describe('Create Job - POST /api/jobs', () => {
     it('should queue job with specified output and execute it', async () => {
+      await fs.promises.mkdir(path.join(testDir, 'dir'), { recursive: true });
+      const inputFilePath = path.join(testDir, 'dir', 'input+3+0.1+0+.mp4');
+      await touch(inputFilePath);
+
       const createJobResponse = await request
         .post('/api/jobs/')
-        .send({ inputFilePath: 'dir/input+3+0.1+0+.mp4', outFilePath: 'dir/output.mp4', scriptName: 'test.sh' });
+        .send({ inputFilePath, outFilePath: 'dir/output.mp4', scriptName: 'test.sh' });
       assertStatus(createJobResponse, 200);
       const createdJob = createJobResponse.body;
       assert.include(createdJob.name, '_dir');
       assert.deepEqual(createdJob.status, 'todo');
       assert.include(createdJob.id, '_dir.job');
-      assert.deepEqual(createdJob.inputFile, 'dir/input+3+0.1+0+.mp4');
+      assert.deepEqual(createdJob.inputFile, inputFilePath);
       assert.deepEqual(createdJob.outputFile, 'dir/output.mp4');
       assert.deepEqual(createdJob.script, 'test.sh');
 
@@ -171,14 +177,16 @@ describe('Jobs api routes', () => {
     });
 
     it('should create job with inferred output and execute it', async () => {
-      const createJobResponse = await request
-        .post('/api/jobs/')
-        .send({ inputFilePath: 'dir/input+3+0.1+0+.mp4', scriptName: 'test.sh' });
+      await fs.promises.mkdir(path.join(testDir, 'dir'), { recursive: true });
+      const inputFilePath = path.join(testDir, 'dir', 'input+3+0.1+0+.mp4');
+      await touch(inputFilePath);
+
+      const createJobResponse = await request.post('/api/jobs/').send({ inputFilePath, scriptName: 'test.sh' });
       assertStatus(createJobResponse, 200);
 
       const createdJob = createJobResponse.body;
-      assert.deepEqual(createdJob.inputFile, 'dir/input+3+0.1+0+.mp4');
-      assert.deepEqual(createdJob.outputFile, 'dir/_input+3+0.1+0+.mp4');
+      assert.deepEqual(createdJob.inputFile, inputFilePath);
+      assert.deepEqual(createdJob.outputFile, path.join(testDir, 'dir', '_input+3+0.1+0+.mp4'));
       assert.deepEqual(createdJob.script, 'test.sh');
 
       // Ensure job complete

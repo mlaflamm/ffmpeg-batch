@@ -7,8 +7,9 @@ export const JobInputSchema = zod.object({
   scriptName: zod.string().predicate(v => ['resize.sh', 'scale.sh', 'test.sh'].includes(v)),
 });
 
+export type VideoFileInfo = VideoStreamInfo & { fileSize?: number };
 export type JobInput = zod.Infer<typeof JobInputSchema>;
 export type JobData = JobInput & { outFilePath: string };
-export type Job = JobData & { jobId: string, inputFileInfo?: VideoStreamInfo };
-export type JobResult = { startedAt: Date; durationMs: number; inputFileSize?: number; outputFileSize?: number };
-export type JobDetails = Job & Partial<JobResult> & { createdAt?: Date, updatedAt?: Date };
+export type Job = JobData & { jobId: string; inputFileInfo?: VideoFileInfo };
+export type JobResult = { startedAt: Date; durationMs: number; outputFileInfo?: VideoFileInfo };
+export type JobDetails = Job & Partial<JobResult> & { createdAt?: Date; updatedAt?: Date };

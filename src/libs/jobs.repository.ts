@@ -4,10 +4,9 @@ import path from 'path';
 import prettyMs from 'pretty-ms';
 
 import { Service } from 'typedi';
-import { Job, JobData, JobDetails, JobResult } from './job.model';
+import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model';
 import { readFirstLine } from './utils/read-first-line';
 import { readLastLine } from './utils/read-last-line';
-import { VideoStreamInfo } from './utils/ffprobe';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 
@@ -67,7 +66,7 @@ export class JobsRepository {
   }
 
   // addJob
-  async addJob(job: JobData, inputFileInfo?: VideoStreamInfo): Promise<Job> {
+  async addJob(job: JobData, inputFileInfo?: VideoFileInfo): Promise<Job> {
     const jobId = path.join(
       'todo',
       new Date().getTime() + '_' + path.basename(path.dirname(job.inputFilePath)) + '.job'
@@ -106,21 +105,11 @@ export class JobsRepository {
   }
 
   // completeJob
-  async completeJob(job: Job, jobStartTime: number, err?: Error): Promise<string> {
+  async completeJob(job: Job, jobStartTime: number, outputFileInfo?: VideoFileInfo, err?: Error): Promise<string> {
     const jobId = job.jobId;
     const runningJobFilePath = path.join(this.jobsDir, path.basename(jobId));
     const durationMs = Date.now() - jobStartTime;
-    const [inputFileSize, outputFileSize] = await Promise.all([
-      fs.promises
-        .stat(job.inputFilePath)
-        .then(stat => stat.size)
-        .catch(err => undefined),
-      fs.promises
-        .stat(job.outFilePath)
-        .then(stat => stat.size)
-        .catch(err => undefined),
-    ]);
-    const resultLine = JSON.stringify({ startedAt: new Date(jobStartTime), durationMs, inputFileSize, outputFileSize });
+    const resultLine = JSON.stringify({ startedAt: new Date(jobStartTime), durationMs, outputFileInfo });
 
     if (err) {
       // job failure, move job file to error directory

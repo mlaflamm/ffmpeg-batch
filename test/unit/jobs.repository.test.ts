@@ -7,13 +7,14 @@ import difference from 'lodash/difference';
 
 import { readLastLine } from '../../src/libs/utils/read-last-line';
 import { JobsRepository } from '../../src/libs/jobs.repository';
-import { Job } from '../../src/libs/job.model';
+import { Job, VideoFileInfo } from '../../src/libs/job.model';
 import * as fixture from '../fixtures';
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());
 
-  const createJob = async (job: Job, time: Date = new Date()) => fixture.createJob(testDir, job, time);
+  const createJob = async (job: Job, opts: { inputFileInfo?: VideoFileInfo; time?: Date } = {}) =>
+    fixture.createJob(testDir, job, opts);
 
   beforeEach(async () => {
     await fs.promises.rmdir(testDir, { recursive: true });
@@ -98,13 +99,14 @@ describe('Job repository', () => {
   });
 
   describe('add job', () => {
+    const jobData = {
+      inputFilePath: 'ancestor/Some Parent/input.mp4',
+      outFilePath: 'ancestor/Some Parent/_output.mp4',
+      scriptName: 'fake.sh',
+    };
+
     it('should be successful', async () => {
       const repository = new JobsRepository(testDir);
-      const jobData = {
-        inputFilePath: 'ancestor/Some Parent/input.mp4',
-        outFilePath: 'ancestor/Some Parent/_output.mp4',
-        scriptName: 'fake.sh',
-      };
 
       const addedJob = await repository.addJob(jobData);
       assert.deepEqual(await repository.getJob(addedJob.jobId), { jobId: addedJob.jobId, ...jobData });
@@ -112,11 +114,19 @@ describe('Job repository', () => {
       // status
       assert.equal(path.dirname(addedJob.jobId), 'todo');
 
-      // name
+      // id
       const [timestamp, jobName] = path.basename(addedJob.jobId).split('_');
       assert.isAtMost(+timestamp, Date.now());
       assert.isAtLeast(+timestamp, Date.now() - 5000);
       assert.equal(jobName, 'Some Parent.job');
+    });
+
+    it('should include input file info', async () => {
+      const repository = new JobsRepository(testDir);
+
+      const inputFileInfo = { fileSize: 100, duration: '66' };
+      const addedJob = await repository.addJob(jobData, inputFileInfo);
+      assert.deepEqual(await repository.getJob(addedJob.jobId), { jobId: addedJob.jobId, ...jobData, inputFileInfo });
     });
   });
 
@@ -137,8 +147,8 @@ describe('Job repository', () => {
       const repository = new JobsRepository(testDir);
       const job = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
 
-      await createJob({ jobId: 'job99.job', ...job }, new Date(Date.now() - 60000));
-      await createJob({ jobId: 'job66', ...job }, new Date(Date.now() - 60000)); // bad extension);
+      await createJob({ jobId: 'job99.job', ...job }, { time: new Date(Date.now() - 60000) });
+      await createJob({ jobId: 'job66', ...job }, { time: new Date(Date.now() - 60000) }); // bad extension);
       await createJob({ jobId: 'todo/job33.job', ...job });
       await createJob({ jobId: 'job00.job', ...job });
 
@@ -171,7 +181,7 @@ describe('Job repository', () => {
       const repository = new JobsRepository(testDir);
       const job = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
       const initialJobModifiedTime = Date.now() - 60000;
-      await createJob({ jobId: 'job99.job', ...job }, new Date(initialJobModifiedTime));
+      await createJob({ jobId: 'job99.job', ...job }, { time: new Date(initialJobModifiedTime) });
 
       const startedJob = await repository.startJob('job99.job');
       if (!startedJob) {
@@ -194,33 +204,23 @@ describe('Job repository', () => {
   });
 
   describe('complete job', () => {
-    before(async () => {
-      await fs.promises.writeFile('input', ''.padEnd(100));
-      await fs.promises.writeFile('output', ''.padEnd(25));
-    });
-
-    after(async () => {
-      await fs.promises.unlink('input');
-      await fs.promises.unlink('output');
-    });
-
     it('should move completed job to done directory', async () => {
       const repository = new JobsRepository(testDir);
       const jobData = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
       const job = await createJob({ jobId: 'job99.job', ...jobData });
 
       const startTime = Date.now() - 5000;
-      const doneJobId = await repository.completeJob(job, startTime);
+      const doneJobId = await repository.completeJob(job, startTime, { fileSize: 25 });
       assert.equal(doneJobId, 'done/job99.job');
       assert.deepEqual(await repository.getAllJobIds(), [doneJobId]);
 
       const lastLine = await readLastLine(repository.getJobPath(doneJobId));
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'outputFileSize', 'startedAt']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'outputFileInfo', 'startedAt']);
       assert.isAtLeast(result.durationMs, 5000);
       assert.equal(result.startedAt, new Date(startTime).toISOString());
-      assert.equal(result.inputFileSize, 100);
-      assert.equal(result.outputFileSize, 25);
+      // assert.equal(result.inputFileSize, 100);
+      assert.deepEqual(result.outputFileInfo, { fileSize: 25 });
     });
 
     it('should move failed job to error directory', async () => {
@@ -229,16 +229,15 @@ describe('Job repository', () => {
       const job = await createJob({ jobId: 'job99.job', ...jobData });
 
       const startTime = Date.now() - 5000;
-      const errorJobId = await repository.completeJob(job, startTime, new Error());
+      const errorJobId = await repository.completeJob(job, startTime, undefined, new Error());
       assert.equal(errorJobId, 'error/job99.job');
       assert.deepEqual(await repository.getAllJobIds(), [errorJobId]);
 
       const lastLine = await readLastLine(repository.getJobPath(errorJobId));
       const result = JSON.parse(lastLine);
-      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'inputFileSize', 'startedAt']);
+      assert.deepEqual(Object.keys(result).sort(), ['durationMs', 'startedAt']);
       assert.isAtLeast(result.durationMs, 5000);
       assert.equal(result.startedAt, new Date(startTime).toISOString());
-      assert.equal(result.inputFileSize, 100);
     });
   });
 
@@ -252,8 +251,8 @@ describe('Job repository', () => {
         scriptName: 'test.sh',
       });
 
-      await createJob(job('job99.job', '99'), new Date(Date.now() - 61000)); // started & stalled
-      await createJob(job('job66', '66'), new Date(Date.now() - 60000)); // bad extension
+      await createJob(job('job99.job', '99'), { time: new Date(Date.now() - 61000) }); // started & stalled
+      await createJob(job('job66', '66'), { time: new Date(Date.now() - 60000) }); // bad extension
       await createJob(job('todo/job33.job', '33'));
       await createJob(job('job00.job', '00')); // started, not stalled
 
@@ -273,14 +272,14 @@ describe('Job repository', () => {
       const job = { inputFilePath: 'input', outFilePath: 'output', scriptName: 'test.sh' };
 
       await createJob({ jobId: 'started.job', ...job });
-      await createJob({ jobId: 'stalled.job', ...job }, new Date(Date.now() - ms('5m')));
-      await createJob({ jobId: 'todo/old_pending.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'stalled.job', ...job }, { time: new Date(Date.now() - ms('5m')) });
+      await createJob({ jobId: 'todo/old_pending.job', ...job }, { time: new Date(Date.now() - ms('5m')) });
       await createJob({ jobId: 'todo/new_pending.job', ...job });
-      await createJob({ jobId: 'error/failed.job', ...job }, new Date(Date.now() - ms('5m')));
+      await createJob({ jobId: 'error/failed.job', ...job }, { time: new Date(Date.now() - ms('5m')) });
       await createJob({ jobId: 'done/recent.job', ...job });
-      await createJob({ jobId: 'done/old.job', ...job }, new Date(Date.now() - ms('5m')));
-      await createJob({ jobId: 'done/another_old.job', ...job }, new Date(Date.now() - ms('5m')));
-      await createJob({ jobId: 'done/very_old.job', ...job }, new Date(Date.now() - ms('5d')));
+      await createJob({ jobId: 'done/old.job', ...job }, { time: new Date(Date.now() - ms('5m')) });
+      await createJob({ jobId: 'done/another_old.job', ...job }, { time: new Date(Date.now() - ms('5m')) });
+      await createJob({ jobId: 'done/very_old.job', ...job }, { time: new Date(Date.now() - ms('5d')) });
 
       const jobIdsBefore = await repository.getAllJobIds();
       assert.lengthOf(jobIdsBefore, 9);
