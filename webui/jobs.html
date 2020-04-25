@@ -1,6 +1,6 @@
 <html>
   <head>
-    <link rel="icon" type="image/png" href="ffmpeg-icon.png" />
+    <link rel="icon" type="image/png" href="/ffmpeg-icon.png" />
     <style>
       body {
         margin: 0;
@@ -87,18 +87,16 @@
                     p.innerHTML = `<b>${key}</b>: ${
                       keyIsDateField(key) ? formatDateString(value) : JSON.stringify(value)
                     }`;
+                    p.onclick = event => event.stopPropagation();
+                    p.style = ';cursor: text';
                     return p;
-                  }),
-                  ...(() => {
-                    if (!job._lastTouched || !job.startDate) {
-                      return [];
-                    }
-                    const duration = Math.floor((job._lastTouched - new Date(job.startDate).valueOf()) / 1000);
-                    const p = document.createElement('p');
-                    p.innerHTML = `<b>duration (seconds)</b>: ${duration}`;
-                    return [p];
-                  })()
+                  })
                 );
+
+                if (job.id) {
+                  div.onclick = () => window.open(window.location + `/` + job.id, '_blank');
+                  div.style = div.style + ';cursor: pointer';
+                }
                 return div;
               });
 

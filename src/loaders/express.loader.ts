@@ -4,6 +4,7 @@ import morgan from 'morgan';
 
 import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
 import { Environment } from '../env';
+import http from "http";
 
 export function expressLoader(env: Environment): MicroframeworkLoader {
   return (settings: MicroframeworkSettings | undefined) => {
@@ -20,5 +21,6 @@ export function expressLoader(env: Environment): MicroframeworkLoader {
     app.use(bodyParser.json());
 
     settings.setData('app', app);
+    settings.setData('server', http.createServer(app));
   };
 }
