@@ -9,7 +9,7 @@ import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3t
 import { Environment } from '../env';
 import { JobsRepository } from '../libs/jobs.repository';
 
-const sliceFile = require('slice-file');
+const sliceFile = require('slice-file-ml');
 
 const debug = namespace('ffmpeg-batch:websocket.loader');
 
@@ -45,7 +45,7 @@ export function websocketLoader(env: Environment, container: ContainerInstance):
         streams[socketId] = streams;
         streams.follow(0).on('data', (data: Buffer) => {
           io.to(socketId).emit('newLine', {
-            line: data.toString().replace(/\r\n|\r/g, '\n'),
+            line: data.toString(),
           });
         });
       });

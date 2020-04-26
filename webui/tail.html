@@ -4,12 +4,33 @@
     <link rel="icon" type="image/png" href="/ffmpeg-icon.png" />
     <meta charset="UTF-8" />
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.0.min.js"></script>
     <script>
-      console.log(window.location.pathname);
+      const debounce = (callback, wait = 250) => {
+        let timer;
+        let last_call = 0;
+        return (...args) => {
+          clearTimeout(timer);
+          const now = Date.now(),
+            time_from_last_call = now - last_call;
 
-      const [title] = window.location.pathname.replace('.job', '').split('/').slice(-1);
+          if (time_from_last_call > wait) {
+            last_call = now;
+            callback(...args);
+          } else {
+            timer = setTimeout(() => {
+              last_call = now;
+              callback(...args);
+            }, wait);
+          }
+        };
+      };
+
+      console.log(window.location.pathname);
+      const [title] = decodeURI(window.location.pathname).replace('.job', '').split('/').slice(-1);
       document.title = title;
+
+      const scrollToEnd = debounce(() => $('#end').get(0).scrollIntoView());
 
       $(() => {
         const socket = io();
@@ -21,7 +42,7 @@
         });
         socket.on('newLine', data => {
           $('#tailing').append(data.line);
-          $('#end').get(0).scrollIntoView();
+          scrollToEnd();
         });
       });
     </script>
