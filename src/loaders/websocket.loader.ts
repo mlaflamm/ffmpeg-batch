@@ -42,12 +42,17 @@ export function websocketLoader(env: Environment, container: ContainerInstance):
 
         debug('start tailing (%s) -> "%s"', socketId, jobId);
         const streams = sliceFile(jobPath);
-        streams[socketId] = streams;
-        streams.follow(0).on('data', (data: Buffer) => {
-          io.to(socketId).emit('newLine', {
-            line: data.toString(),
+        openStreams[socketId] = streams;
+        streams
+          .follow(0)
+          .on('error', (err: Error) => {
+            debug('tailing error %s: %s', jobId, err.message);
+          })
+          .on('data', (data: Buffer) => {
+            io.to(socketId).emit('newLine', {
+              line: data.toString(),
+            });
           });
-        });
       });
 
       socket.on('disconnect', () => {
