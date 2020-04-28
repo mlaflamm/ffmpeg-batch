@@ -41,7 +41,9 @@ export function websocketLoader(env: Environment, container: ContainerInstance):
         const jobPath = jobsRepository.getJobPath(jobId);
 
         debug('start tailing (%s) -> "%s"', socketId, jobId);
-        const streams = sliceFile(jobPath);
+        const streams = sliceFile(jobPath).on('error', (err: Error) => {
+          debug('stream error %s: %s', jobId, err.message);
+        });
         openStreams[socketId] = streams;
         streams
           .follow(0)
@@ -57,10 +59,10 @@ export function websocketLoader(env: Environment, container: ContainerInstance):
 
       socket.on('disconnect', () => {
         debug(`client disconnected (${socketId})`);
-        const tail = openStreams[socketId];
+        const stream = openStreams[socketId];
         delete openStreams[socketId];
-        if (tail) {
-          tail.close();
+        if (stream) {
+          stream.close();
         }
       });
     });
