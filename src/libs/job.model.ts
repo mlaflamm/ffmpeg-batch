@@ -4,7 +4,7 @@ import { VideoStreamInfo } from './utils/ffprobe';
 export const JobInputSchema = zod.object({
   inputFilePath: zod.string(),
   outFilePath: zod.string().optional(),
-  scriptName: zod.string().predicate(v => ['resize.sh', 'scale.sh', 'scale-mp3.sh', 'test.sh'].includes(v)),
+  scriptName: zod.string().valid(['resize.sh', 'scale.sh', 'scale-mp3.sh', 'test.sh']),
 });
 
 export type VideoFileInfo = VideoStreamInfo & { fileSize?: number };
