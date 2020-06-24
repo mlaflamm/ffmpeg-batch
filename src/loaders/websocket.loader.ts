@@ -30,6 +30,8 @@ export function websocketLoader(env: Environment, container: ContainerInstance):
 
     const openStreams: Record<string, { close: () => void }> = {};
 
+    // https://stackoverflow.com/questions/46219867/nodejs-spawn-remote-tail-and-socket-io-to-client
+
     const server = settings.getData('server');
     const io = SocketIO(server);
     io.on('connection', socket => {
