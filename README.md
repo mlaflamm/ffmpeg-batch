@@ -5,7 +5,7 @@ A tool that watch a directory for new video files to scale down. I built this fo
 
 ##### build docker image
 ```
-docker build -t mlaflamme/ffmpeg-batch.
+docker build -t mlaflamme/ffmpeg-batch .
 ```
 
 ##### publish docker image
