@@ -70,6 +70,7 @@ export const getSampleVideoFile = async (type: 'mp4' | 'wmv' | 'mov'): Promise<s
 };
 
 const downloadSampleVideoIfRequired = async (outputFile: string, remoteUrl: string) => {
+  await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
   return fs.promises.access(outputFile, fs.constants.F_OK).catch(() => {
     // File doesn't exist, download it
     const url = new URL(remoteUrl);
