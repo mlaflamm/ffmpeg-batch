@@ -34,9 +34,11 @@ describe('Watcher service', () => {
 
   it('should scan files', async () => {
     await mkFiles('-ok-now', ['test.mp4']);
+    await mkFiles('-ok-mkv', ['test.mkv']);
     await mkFiles('-ok-after', ['test.mov'], new Date(Date.now() + 600000));
     await mkFiles('-ok-before', ['test.m4v'], new Date(Date.now() - 600000));
     await mkFiles('-skip-multiple-files', ['test.mp4', 'test.mov']);
+    await mkFiles('-skip-mkv+mp4', ['test.mkv', 'test.mp4']);
     await mkFiles('-skip-empty', []);
     await mkFiles('-skip-incompatible-files', ['test.txt']);
     await mkFiles('skip-no-prefix', ['test.mp4']);
@@ -45,6 +47,7 @@ describe('Watcher service', () => {
     const scannedFiles = await scan(watchDir);
     assert.deepEqual(scannedFiles, [
       path.join(watchDir, '-ok-before', 'test.m4v'),
+      path.join(watchDir, '-ok-mkv', 'test.mkv'),
       path.join(watchDir, '-ok-now', 'test.mp4'),
       path.join(watchDir, '-ok-after', 'test.mov'),
     ]);

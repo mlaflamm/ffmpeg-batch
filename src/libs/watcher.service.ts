@@ -17,7 +17,7 @@ async function asFile(
     const subdirPath = path.join(dirPath, entry.name);
     const children = (await fs.promises.readdir(subdirPath)).filter(f => {
       const ext = path.extname(f).toLowerCase();
-      return ['.mp4', '.mov', '.m4v'].includes(ext);
+      return ['.mp4', '.mov', '.m4v', '.mkv'].includes(ext);
     });
     if (children.length === 1) {
       const fullPath = path.join(subdirPath, children[0]);
