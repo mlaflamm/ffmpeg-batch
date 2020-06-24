@@ -1,4 +1,4 @@
-FROM node:10-alpine
+FROM node:12-alpine
 
 ENV DEBUG=ffmpeg-batch:* JOBS_DIR=/config/jobs JOBS_ENABLED=true WATCH_ENABLED=true
 RUN apk add --no-cache bash ffmpeg
