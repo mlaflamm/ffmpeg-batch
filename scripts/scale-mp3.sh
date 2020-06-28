@@ -1,7 +1,7 @@
 #! /bin/bash
 
-INPUT_FILE=${1//%/%%}
-OUTPUT_FILE=${2//%/%%}
+INPUT_FILE=$1
+OUTPUT_FILE=$2
 
 echo "$INPUT_FILE"
 echo "$OUTPUT_FILE"
