@@ -6,4 +6,4 @@ OUTPUT_FILE=$2
 echo "$INPUT_FILE"
 echo "$OUTPUT_FILE"
 
-ffmpeg -y -i "$INPUT_FILE" -s 960x540 -crf 21 -c:a copy "$OUTPUT_FILE" 2>&1
+ffmpeg -y -i "$INPUT_FILE" -metadata title="" -s 960x540 -crf 21 -c:a copy "$OUTPUT_FILE" 2>&1
