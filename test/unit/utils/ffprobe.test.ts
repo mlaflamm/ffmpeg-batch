@@ -5,51 +5,25 @@ import { extractVideoInfo } from '../../../src/libs/utils/ffprobe';
 import { getSampleVideoFile } from '../../fixtures';
 
 describe('ffprobe', () => {
-  it('should extract video info - mp4', async () => {
-    const expected = {
-      bit_rate: '301201',
-      codec_name: 'h264',
-      display_aspect_ratio: '16:9',
-      duration: '30.033333',
-      height: 270,
-      width: 480,
-    };
-
-    const sampleFile = await getSampleVideoFile('mp4');
-    const actual = await extractVideoInfo(sampleFile);
-    assert.deepEqual(actual, expected);
-  });
-
-  it('should extract video info - wmv', async () => {
-    const expected = {
-      codec_name: 'wmv2',
-      display_aspect_ratio: '16:9',
-      duration: '30.550000',
-      height: 270,
-      width: 480,
-    };
-
-    const sampleFile = await getSampleVideoFile('wmv');
-    const actual = await extractVideoInfo(sampleFile);
-    assert.deepEqual(actual, expected);
-  });
-
-  it('should extract video info - mov', async () => {
-    const expected = {
-      bit_rate: '37717',
-      codec_name: 'h264',
-      display_aspect_ratio: '16:9',
-      duration: '30.033984',
-      height: 270,
-      width: 480,
-    };
-
-    const sampleFile = await getSampleVideoFile('mov');
-    const actual = await extractVideoInfo(sampleFile);
-    assert.deepEqual(actual, expected);
-  });
+  for (const type of ['mp4', 'wmv', 'mov', 'av1'] as const) {
+    it(`should extract video info - ${type}`, async function () {
+      this.timeout(15000);
+      const sampleFile = await getSampleVideoFile(type);
+      const actual = await extractVideoInfo(sampleFile);
+      assert.include(actual, {
+        codec_name: type === 'av1' ? 'av1' : type === 'wmv' ? 'wmv2' : 'h264',
+        display_aspect_ratio: '16:9',
+        height: 270,
+        width: 480,
+      });
+      assert.closeTo(Number(actual.duration), 2, 0.1);
+      if (type !== 'wmv') {
+        assert.isAbove(Number(actual.bit_rate), 0);
+      }
+    });
+  }
 
   it('should fail when file does not exists', async () => {
-    nodeAssert.rejects(() => extractVideoInfo('unknown.mp4'));
+    await nodeAssert.rejects(() => extractVideoInfo('unknown.mp4'));
   });
 });

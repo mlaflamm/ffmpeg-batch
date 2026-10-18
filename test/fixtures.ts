@@ -12,7 +12,8 @@ import { Job, VideoFileInfo } from '../src/libs/job.model';
 import { WatcherService } from '../src/libs/watcher.service';
 import { JobsService } from '../src/libs/jobs.service';
 import { Environment } from '../src/env';
-import request from 'supertest';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
 type UnwrapPromise<T extends Promise<any>> = T extends Promise<infer K> ? K : T;
 
@@ -40,56 +41,55 @@ export const createJob = async (
   return job;
 };
 
-export const getSampleVideoFile = async (type: 'mp4' | 'wmv' | 'mov'): Promise<string> => {
-  switch (type) {
-    case 'mp4': {
-      const sampleFile = path.join('.temp', 'video_sample.mp4');
-      await downloadSampleVideoIfRequired(
-        sampleFile,
-        'https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_480_1_5MG.mp4'
-      );
-      return sampleFile;
-    }
-    case 'wmv': {
-      const sampleFile = path.join('.temp', 'video_sample.wmv');
-      await downloadSampleVideoIfRequired(
-        sampleFile,
-        'https://file-examples.com/wp-content/uploads/2018/04/file_example_WMV_480_1_2MB.wmv'
-      );
-      return sampleFile;
-    }
-    case 'mov': {
-      const sampleFile = path.join('.temp', 'video_sample.mov');
-      await downloadSampleVideoIfRequired(
-        sampleFile,
-        'https://file-examples.com/wp-content/uploads/2018/04/file_example_MOV_480_700kB.mov'
-      );
-      return sampleFile;
-    }
-  }
-};
+const execFileAsync = promisify(execFile);
 
-const downloadSampleVideoIfRequired = async (outputFile: string, remoteUrl: string) => {
-  await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
-  return fs.promises.access(outputFile, fs.constants.F_OK).catch(() => {
-    // File doesn't exist, download it
-    const url = new URL(remoteUrl);
-    return new Promise((resolve, reject) => {
-      const stream = fs.createWriteStream(outputFile);
-      stream
-        .once('finish', () => {
-          stream.close();
-          resolve();
-        })
-        .once('error', err => {
-          stream.close();
-          reject(err);
-        });
-      request(url.origin)
-        .get(url.pathname + '?' + url.search)
-        .pipe(stream);
-    });
-  });
+// Generate short, known media locally so tests do not require network access.
+// Cache promises so concurrent callers cannot read a partially written fixture.
+const sampleVideos = new Map<string, Promise<string>>();
+export const getSampleVideoFile = (type: 'mp4' | 'wmv' | 'mov' | 'av1'): Promise<string> => {
+  const existing = sampleVideos.get(type);
+  if (existing) {
+    return existing;
+  }
+  const generate = async () => {
+    const outputFile = path.join('.temp', `generated_sample_${type}.${type === 'av1' ? 'mp4' : type}`);
+    await fs.promises.mkdir(path.dirname(outputFile), { recursive: true });
+    const videoArgs =
+      type === 'av1'
+        ? ['-c:v', 'libaom-av1', '-cpu-used', '8', '-crf', '40']
+        : type === 'wmv'
+        ? ['-c:v', 'wmv2']
+        : ['-c:v', 'libx264', '-crf', '21'];
+    await execFileAsync('ffmpeg', [
+      '-v',
+      'error',
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc2=size=480x270:rate=12',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:sample_rate=48000',
+      '-t',
+      '2',
+      ...videoArgs,
+      '-threads',
+      '2',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      type === 'wmv' ? 'wmav2' : 'aac',
+      '-metadata',
+      'title=fixture-title',
+      outputFile,
+    ]);
+    return outputFile;
+  };
+  const result = generate();
+  sampleVideos.set(type, result);
+  return result;
 };
 
 const testDir = '.test';
@@ -105,7 +105,7 @@ export const getFixtures = async function () {
     container.get(JobsService).pause();
     Container.reset(container.id);
 
-    await fs.promises.rmdir(testDir, { recursive: true });
+    await fs.promises.rm(testDir, { recursive: true, force: true });
   };
 
   return {

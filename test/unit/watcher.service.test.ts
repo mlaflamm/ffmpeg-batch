@@ -24,12 +24,12 @@ describe('Watcher service', () => {
   };
 
   beforeEach(async () => {
-    await fs.promises.rmdir(testDir, { recursive: true });
+    await fs.promises.rm(testDir, { recursive: true, force: true });
     await fs.promises.mkdir(testDir, { recursive: true });
   });
 
   after(async () => {
-    await fs.promises.rmdir('.test', { recursive: true });
+    await fs.promises.rm('.test', { recursive: true, force: true });
   });
 
   it('should scan files', async () => {
