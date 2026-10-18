@@ -18,3 +18,14 @@ Thumbs.db
 
 # Env files
 .env*
+
+# Local dependencies, build output, repository metadata and local configuration
+node_modules
+dist
+.git
+.github
+.agents
+.codex
+.aws
+AGENTS.md
+docs/*.local.md
