@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  LOCAL_IMAGE: ffmpeg-batch:ci
+  IMAGE_NAME: ghcr.io/mlaflamm/ffmpeg-batch
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bash ffmpeg
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm test
+      - name: Check promotion guards without publishing
+        run: bash .github/scripts/test-promotion.sh
+
+  image:
+    name: Verify Docker image
+    needs: test
+    if: >-
+      github.event_name == 'pull_request' ||
+      github.ref != format('refs/heads/{0}', github.event.repository.default_branch) ||
+      github.repository != 'mlaflamm/ffmpeg-batch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Build and verify image
+        run: bash .github/scripts/check-image.sh "$LOCAL_IMAGE"
+
+  publish:
+    name: Verify and publish edge
+    needs: test
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      github.repository == 'mlaflamm/ffmpeg-batch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Build and verify image
+        run: bash .github/scripts/check-image.sh "$LOCAL_IMAGE"
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish tested image as edge
+        run: |
+          docker tag "$LOCAL_IMAGE" "$IMAGE_NAME:edge"
+          docker push "$IMAGE_NAME:edge"
+          reference=$(docker image inspect "$IMAGE_NAME:edge" --format '{{index .RepoDigests 0}}')
+          {
+            echo '### Published edge image'
+            echo
+            echo "Image: \`$reference\`"
+            echo "Source commit: \`$GITHUB_SHA\`"
+            echo
+            echo 'Pin this digest when testing a deployment.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,7 @@
 FROM node:24-trixie-slim
 
+LABEL org.opencontainers.image.source="https://github.com/mlaflamm/ffmpeg-batch"
+
 ENV DEBUG=ffmpeg-batch:* JOBS_DIR=/config/jobs JOBS_ENABLED=true WATCH_ENABLED=true
 RUN apt-get update \
     && apt-get install -y --no-install-recommends bash ffmpeg \
