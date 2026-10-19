@@ -26,6 +26,10 @@ export class JobsRepository {
 
   // getJobPath
   getJobPath(jobId: string): string {
+    const root = path.resolve(this.jobsDir) + path.sep;
+    if (!path.resolve(this.jobsDir, jobId).startsWith(root)) {
+      throw Object.assign(new Error('Job path must stay inside the jobs directory'), { statusCode: 400 });
+    }
     return path.join(this.jobsDir, jobId);
   }
 

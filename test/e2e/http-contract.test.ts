@@ -33,6 +33,12 @@ describe('HTTP contracts', () => {
     assert.deepEqual((await request.get('/api/jobs?status=todo&status=done')).body, []);
   });
 
+  it('rejects job paths escaping the configured directory', async () => {
+    const response = await fixtures.request.get('/api/jobs/%2E%2E%2Foutside');
+    assert.equal(response.status, 400);
+    assert.include(response.body.message, 'inside the jobs directory');
+  });
+
   it('maps async failures and rejects oversized bodies', async () => {
     const missingInput = await fixtures.request
       .post('/api/jobs')

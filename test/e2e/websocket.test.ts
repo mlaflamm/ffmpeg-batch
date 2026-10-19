@@ -16,7 +16,12 @@ describe('Live logs', () => {
     if (!address || typeof address === 'string') throw new Error('Missing server address');
     const socket = connect(`http://127.0.0.1:${address.port}`, { forceNew: true, reconnection: false });
     const lines: string[] = [];
-    socket.on('connect', () => socket.emit('tail', '/jobs/socket.job'));
+    socket.on('connect', () => {
+      socket.emit('tail', null);
+      socket.emit('tail', '/jobs/../../outside');
+      socket.emit('tail', '/jobs/%zz');
+      socket.emit('tail', '/jobs/socket.job');
+    });
     socket.on('newLine', (data: { line: string }) => lines.push(data.line));
     try {
       await eventually(() => assert.include(lines.join(''), 'progress'), 10, 2000);

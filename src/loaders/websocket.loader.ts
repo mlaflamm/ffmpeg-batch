@@ -1,87 +1,61 @@
 import namespace from 'debug';
 import { Server as SocketServer } from 'socket.io';
 import path from 'path';
-
 import { Application } from 'express';
 import { Server } from 'http';
-
 import { JobsRepository } from '../libs/jobs.repository.js';
-
-import { createRequire } from 'node:module';
-const sliceFile = createRequire(import.meta.url)('slice-file-ml');
+import { followFile } from '../libs/utils/follow-file.js';
 
 const debug = namespace('ffmpeg-batch:websocket.loader');
 
 export function attachWebsocket(app: Application, server: Server, jobsRepository: JobsRepository): () => Promise<void> {
-  app.get('/jobs/todo/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-  app.get('/jobs/done/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-  app.get('/jobs/error/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-  app.get('/jobs/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-
-  const openStreams: Record<string, { close: () => Promise<void> }> = {};
-
-  // https://stackoverflow.com/questions/46219867/nodejs-spawn-remote-tail-and-socket-io-to-client
-
+  for (const route of ['/jobs/todo/:id', '/jobs/done/:id', '/jobs/error/:id', '/jobs/:id']) {
+    app.get(route, (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
+  }
+  const streams = new Map<string, () => Promise<void>>();
+  const closingStreams = new Set<Promise<void>>();
+  let cleanupError: unknown;
+  let stopping = false;
+  const stopTail = (id: string) => {
+    const stop = streams.get(id);
+    streams.delete(id);
+    if (!stop) return;
+    const closing = stop();
+    closingStreams.add(closing);
+    void closing.then(
+      () => closingStreams.delete(closing),
+      err => {
+        cleanupError = err;
+        closingStreams.delete(closing);
+      }
+    );
+  };
   const io = new SocketServer(server);
   io.on('connection', socket => {
-    const socketId = socket.id;
-    debug(`client connected (${socketId})`);
-
-    socket.on('tail', data => {
-      if (typeof data !== 'string') return;
-      let jobId: string;
+    socket.on('tail', (data: unknown) => {
+      if (stopping || typeof data !== 'string' || !data.startsWith('/jobs/')) return;
+      let jobPath: string;
       try {
-        jobId = decodeURI(data).replace('/jobs/', '');
+        jobPath = jobsRepository.getJobPath(decodeURI(data).slice('/jobs/'.length));
       } catch {
         return;
       }
-      void openStreams[socketId]?.close();
-      const jobPath = jobsRepository.getJobPath(jobId);
-
-      debug('start tailing (%s) -> "%s"', socketId, jobId);
-      let failed = false;
-      let closing: Promise<void> | undefined;
-      const streams = sliceFile(jobPath).on('error', (err: Error) => {
-        failed = true;
-        debug('stream error %s: %s', jobId, err.message);
-      });
-      openStreams[socketId] = {
-        close: () => {
-          if (closing) return closing;
-          if (failed) return Promise.resolve();
-          closing = new Promise<void>(resolve => {
-            streams.once('close', resolve);
-            streams.once('error', resolve);
-            streams.close();
-          });
-          return closing;
+      stopTail(socket.id);
+      const stop = followFile(
+        jobPath,
+        line => {
+          if (streams.get(socket.id) === stop) socket.emit('newLine', { line });
         },
-      };
-      streams
-        .follow(0)
-        .on('error', (err: Error) => {
-          debug('tailing error %s: %s', jobId, err.message);
-        })
-        .on('data', (data: Buffer) => {
-          io.to(socketId).emit('newLine', {
-            line: data.toString(),
-          });
-        });
+        err => debug('tailing error %s: %s', jobPath, err.message)
+      );
+      streams.set(socket.id, stop);
     });
-
-    socket.on('disconnect', () => {
-      debug(`client disconnected (${socketId})`);
-      const stream = openStreams[socketId];
-      delete openStreams[socketId];
-      if (stream) {
-        void stream.close();
-      }
-    });
+    socket.on('disconnect', () => stopTail(socket.id));
   });
   return async () => {
-    const streams = Object.values(openStreams);
-    for (const id of Object.keys(openStreams)) delete openStreams[id];
-    await Promise.all(streams.map(stream => stream.close()));
-    await new Promise<void>(resolve => io.close(() => resolve()));
+    stopping = true;
+    for (const id of streams.keys()) stopTail(id);
+    await Promise.all([...closingStreams, new Promise<void>(resolve => io.close(() => resolve()))]);
+    if (cleanupError) throw cleanupError;
   };
 }
