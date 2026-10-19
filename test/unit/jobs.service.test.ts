@@ -48,6 +48,22 @@ describe('Job service', () => {
       ]);
     });
 
+    it('treats shell syntax in media filenames literally during probing and conversion', async () => {
+      const inputFilePath = path.join(testDir, 'input$(printf injected).mp4');
+      const outFilePath = path.join(testDir, 'output$(printf injected).mp4');
+      await fs.promises.copyFile(await getSampleVideoFile('mp4'), inputFilePath);
+      const repository = new JobsRepository(testDir);
+      const service = new JobsService(repository);
+      try {
+        const job = await service.queueJob({ inputFilePath, outFilePath, scriptName: 'scale.sh' });
+        assert.equal(job.inputFileInfo?.codec_name, 'h264');
+        assert.match((await service.executeJob(job))!, /^done\//);
+        assert.equal((await extractVideoInfo(outFilePath)).codec_name, 'h264');
+      } finally {
+        await service.stop();
+      }
+    });
+
     it('should not fail if cannot extract video stream info from input file', async () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);

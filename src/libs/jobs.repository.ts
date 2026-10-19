@@ -3,14 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import prettyMs from 'pretty-ms';
 
-import { Service } from 'typedi';
 import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model';
 import { readFirstLine } from './utils/read-first-line';
 import { readLastLine } from './utils/read-last-line';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 
-@Service()
 export class JobsRepository {
   private readonly todoDir: string;
   private readonly errorDir: string;

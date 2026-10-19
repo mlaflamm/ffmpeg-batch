@@ -1,5 +1,4 @@
 import namespace from 'debug';
-import { Service } from 'typedi';
 import fs from 'fs';
 import path from 'path';
 
@@ -60,9 +59,8 @@ export async function transform(dirPath: string): Promise<{ oldPath: string; new
   ).filter(i => i.oldPath || i.newPath);
 }
 
-@Service()
 export class WatcherService {
-  private stopWatchLoop?: () => void = undefined;
+  private stopWatchLoop?: () => Promise<void> = undefined;
 
   constructor(
     private readonly jobsService: JobsService,
@@ -77,10 +75,10 @@ export class WatcherService {
     }
   }
 
-  stop() {
+  async stop() {
     if (this.stopWatchLoop) {
       debug('stop watching directory %s', this.watchDir);
-      this.stopWatchLoop();
+      await this.stopWatchLoop();
       this.stopWatchLoop = undefined;
     }
   }

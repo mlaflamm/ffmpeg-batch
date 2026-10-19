@@ -3,70 +3,84 @@ import SocketIO from 'socket.io';
 import path from 'path';
 
 import { Application } from 'express';
-import { ContainerInstance } from 'typedi';
-import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
+import { Server } from 'http';
 
-import { Environment } from '../env';
 import { JobsRepository } from '../libs/jobs.repository';
 
 const sliceFile = require('slice-file-ml');
 
 const debug = namespace('ffmpeg-batch:websocket.loader');
 
-export function websocketLoader(env: Environment, container: ContainerInstance): MicroframeworkLoader {
-  return (settings: MicroframeworkSettings | undefined) => {
-    if (!settings) {
-      throw new Error('Bootstrap Microframework did not provide settings');
-    }
+export function attachWebsocket(app: Application, server: Server, jobsRepository: JobsRepository): () => Promise<void> {
+  app.get('/jobs/todo/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
+  app.get('/jobs/done/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
+  app.get('/jobs/error/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
+  app.get('/jobs/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
 
-    const app: Application = settings.getData('app');
+  const openStreams: Record<string, { close: () => Promise<void> }> = {};
 
-    app.get('/jobs/todo/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-    app.get('/jobs/done/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-    app.get('/jobs/error/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
-    app.get('/jobs/:id', (_, res) => res.sendFile(path.resolve('webui', 'tail.html')));
+  // https://stackoverflow.com/questions/46219867/nodejs-spawn-remote-tail-and-socket-io-to-client
 
-    const jobsRepository = container.get(JobsRepository);
+  const io = SocketIO(server);
+  io.on('connection', socket => {
+    const socketId = socket.id;
+    debug(`client connected (${socketId})`);
 
-    const openStreams: Record<string, { close: () => void }> = {};
+    socket.on('tail', data => {
+      if (typeof data !== 'string') return;
+      let jobId: string;
+      try {
+        jobId = decodeURI(data).replace('/jobs/', '');
+      } catch {
+        return;
+      }
+      void openStreams[socketId]?.close();
+      const jobPath = jobsRepository.getJobPath(jobId);
 
-    // https://stackoverflow.com/questions/46219867/nodejs-spawn-remote-tail-and-socket-io-to-client
-
-    const server = settings.getData('server');
-    const io = SocketIO(server);
-    io.on('connection', socket => {
-      const socketId = socket.id;
-      debug(`client connected (${socketId})`);
-
-      socket.on('tail', data => {
-        const jobId = decodeURI(data).replace('/jobs/', '');
-        const jobPath = jobsRepository.getJobPath(jobId);
-
-        debug('start tailing (%s) -> "%s"', socketId, jobId);
-        const streams = sliceFile(jobPath).on('error', (err: Error) => {
-          debug('stream error %s: %s', jobId, err.message);
-        });
-        openStreams[socketId] = streams;
-        streams
-          .follow(0)
-          .on('error', (err: Error) => {
-            debug('tailing error %s: %s', jobId, err.message);
-          })
-          .on('data', (data: Buffer) => {
-            io.to(socketId).emit('newLine', {
-              line: data.toString(),
-            });
+      debug('start tailing (%s) -> "%s"', socketId, jobId);
+      let failed = false;
+      let closing: Promise<void> | undefined;
+      const streams = sliceFile(jobPath).on('error', (err: Error) => {
+        failed = true;
+        debug('stream error %s: %s', jobId, err.message);
+      });
+      openStreams[socketId] = {
+        close: () => {
+          if (closing) return closing;
+          if (failed) return Promise.resolve();
+          closing = new Promise<void>(resolve => {
+            streams.once('close', resolve);
+            streams.once('error', resolve);
+            streams.close();
           });
-      });
-
-      socket.on('disconnect', () => {
-        debug(`client disconnected (${socketId})`);
-        const stream = openStreams[socketId];
-        delete openStreams[socketId];
-        if (stream) {
-          stream.close();
-        }
-      });
+          return closing;
+        },
+      };
+      streams
+        .follow(0)
+        .on('error', (err: Error) => {
+          debug('tailing error %s: %s', jobId, err.message);
+        })
+        .on('data', (data: Buffer) => {
+          io.to(socketId).emit('newLine', {
+            line: data.toString(),
+          });
+        });
     });
+
+    socket.on('disconnect', () => {
+      debug(`client disconnected (${socketId})`);
+      const stream = openStreams[socketId];
+      delete openStreams[socketId];
+      if (stream) {
+        void stream.close();
+      }
+    });
+  });
+  return async () => {
+    const streams = Object.values(openStreams);
+    for (const id of Object.keys(openStreams)) delete openStreams[id];
+    await Promise.all(streams.map(stream => stream.close()));
+    await new Promise<void>(resolve => io.close(() => resolve()));
   };
 }
