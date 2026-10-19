@@ -1,7 +1,7 @@
 import * as path from 'path';
 import pMap from 'p-map';
 import prettyMs from 'pretty-ms';
-import filesize from 'filesize';
+import { filesize } from 'filesize';
 
 import { Router } from 'express';
 import { JobsRepository } from '../../libs/jobs.repository.js';
@@ -61,7 +61,7 @@ const fileInfoToView = (info: VideoFileInfo): FileInfoView => {
     // display_aspect_ratio: info.display_aspect_ratio,
     bit_rate: info.bit_rate && Math.floor(+info.bit_rate / 1000) + ' kb',
     duration: info.duration && prettyMs(1000 * Math.floor(+info.duration)),
-    fileSize: info.fileSize ? filesize(info.fileSize) : undefined,
+    fileSize: info.fileSize ? filesize(info.fileSize, { base: 2, standard: 'jedec' }) : undefined,
   };
 };
 
