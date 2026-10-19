@@ -3,8 +3,7 @@ import fs from 'fs';
 import { createApplication } from '../../src/app.js';
 import { eventually } from '../../src/libs/utils/eventually.js';
 
-import { createRequire } from 'node:module';
-const connect = createRequire(import.meta.url)('socket.io-client');
+import { io as connect } from 'socket.io-client';
 
 describe('Live logs', () => {
   it('delivers existing lines, CR progress, appended lines and reconnects', async function () {
@@ -24,7 +23,7 @@ describe('Live logs', () => {
       await fs.promises.appendFile(jobPath, 'next\n');
       await eventually(() => assert.include(lines.join(''), 'next'), 10, 2000);
       await new Promise<void>(resolve => {
-        socket.io.once('close', resolve);
+        socket.io.once('close', () => resolve());
         socket.disconnect();
       });
       lines.length = 0;

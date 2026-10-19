@@ -1,5 +1,5 @@
 import namespace from 'debug';
-import SocketIO from 'socket.io';
+import { Server as SocketServer } from 'socket.io';
 import path from 'path';
 
 import { Application } from 'express';
@@ -22,7 +22,7 @@ export function attachWebsocket(app: Application, server: Server, jobsRepository
 
   // https://stackoverflow.com/questions/46219867/nodejs-spawn-remote-tail-and-socket-io-to-client
 
-  const io = SocketIO(server);
+  const io = new SocketServer(server);
   io.on('connection', socket => {
     const socketId = socket.id;
     debug(`client connected (${socketId})`);

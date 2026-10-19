@@ -36,7 +36,7 @@
     "p-map": "^4.0.0",
     "pretty-ms": "^7.0.0",
     "slice-file-ml": "^1.0.0",
-    "socket.io": "^2.3.0",
+    "socket.io": "^4.8.4",
     "touch": "^3.1.0"
   },
   "devDependencies": {
@@ -49,7 +49,6 @@
     "@types/morgan": "^1.9.1",
     "@types/ms": "^0.7.31",
     "@types/node": "^24.19.2",
-    "@types/socket.io": "^2.1.11",
     "@types/supertest": "^7.2.1",
     "@types/touch": "^3.1.1",
     "c8": "^12.0.0",
@@ -57,6 +56,7 @@
     "mocha": "^12.0.3",
     "nodemon": "^3.1.14",
     "prettier": "^2.1.1",
+    "socket.io-client": "^4.8.4",
     "supertest": "^7.3.1",
     "typescript": "^7.0.2"
   },

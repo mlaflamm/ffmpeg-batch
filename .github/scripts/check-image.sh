@@ -45,7 +45,7 @@ const assert = require('node:assert/strict');
   const page = await fetch(base, { signal: AbortSignal.timeout(3000) });
   assert.equal(page.status, 200);
   assert.match(await page.text(), /<html/i);
-  const socket = await fetch(base + '/socket.io/?EIO=3&transport=polling', {
+  const socket = await fetch(base + '/socket.io/?EIO=4&transport=polling', {
     signal: AbortSignal.timeout(3000),
   });
   assert.equal(socket.status, 200);
