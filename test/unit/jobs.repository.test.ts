@@ -3,12 +3,11 @@ import path from 'path';
 import ms = require('ms');
 
 import { assert } from 'chai';
-import difference from 'lodash/difference';
 
-import { readLastLine } from '../../src/libs/utils/read-last-line';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { Job, VideoFileInfo } from '../../src/libs/job.model';
-import * as fixture from '../fixtures';
+import { readLastLine } from '../../src/libs/utils/read-last-line.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { Job, VideoFileInfo } from '../../src/libs/job.model.js';
+import * as fixture from '../fixtures.js';
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());
@@ -287,13 +286,13 @@ describe('Job repository', () => {
       assert.equal(await repository.cleanupJobs(ms('1d')), 1);
       const jobIdsAfter1DayCleanup = await repository.getAllJobIds();
       assert.lengthOf(jobIdsAfter1DayCleanup, 8);
-      const diffAfter1DayCleanup = difference(jobIdsBefore, jobIdsAfter1DayCleanup);
+      const diffAfter1DayCleanup = jobIdsBefore.filter(id => !jobIdsAfter1DayCleanup.includes(id));
       assert.deepEqual(diffAfter1DayCleanup, ['done/very_old.job']);
 
       assert.equal(await repository.cleanupJobs(ms('4m')), 2);
       const jobIdsAfter4MinutesCleanup = await repository.getAllJobIds();
       assert.lengthOf(jobIdsAfter4MinutesCleanup, 6);
-      const diffAfter4MinutesCleanup = difference(jobIdsAfter1DayCleanup, jobIdsAfter4MinutesCleanup);
+      const diffAfter4MinutesCleanup = jobIdsAfter1DayCleanup.filter(id => !jobIdsAfter4MinutesCleanup.includes(id));
       assert.deepEqual(diffAfter4MinutesCleanup, ['done/another_old.job', 'done/old.job']);
     });
   });

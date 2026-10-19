@@ -1,13 +1,13 @@
 import * as path from 'path';
 import pMap from 'p-map';
 import prettyMs from 'pretty-ms';
-import filesize from 'filesize';
+import { filesize } from 'filesize';
 
-import { JsonController, Get, QueryParam, Post, Body, Param, OnUndefined } from 'routing-controllers';
-import { JobsRepository } from '../../libs/jobs.repository';
-import { JobDetails, JobInputSchema, VideoFileInfo } from '../../libs/job.model';
-import { JobsService } from '../../libs/jobs.service';
-import { Environment } from '../../env';
+import { Router } from 'express';
+import { JobsRepository } from '../../libs/jobs.repository.js';
+import { JobDetails, JobInputSchema, VideoFileInfo } from '../../libs/job.model.js';
+import { JobsService } from '../../libs/jobs.service.js';
+import { Environment } from '../../env.js';
 
 type JobSummary = {
   id: string;
@@ -61,7 +61,7 @@ const fileInfoToView = (info: VideoFileInfo): FileInfoView => {
     // display_aspect_ratio: info.display_aspect_ratio,
     bit_rate: info.bit_rate && Math.floor(+info.bit_rate / 1000) + ' kb',
     duration: info.duration && prettyMs(1000 * Math.floor(+info.duration)),
-    fileSize: info.fileSize ? filesize(info.fileSize) : undefined,
+    fileSize: info.fileSize ? filesize(info.fileSize, { base: 2, standard: 'jedec' }) : undefined,
   };
 };
 
@@ -80,7 +80,6 @@ const jobToView = (job: JobDetails): JobView => {
   };
 };
 
-@JsonController('/api/jobs')
 export class JobsController {
   constructor(
     private readonly env: Environment,
@@ -88,20 +87,15 @@ export class JobsController {
     private readonly jobsRepository: JobsRepository
   ) {}
 
-  @OnUndefined(404)
-  @Get('/:id')
-  public getJobById(@Param('id') id: string): Promise<JobView | undefined> {
+  public getJobById(id: string): Promise<JobView | undefined> {
     return this.jobsRepository.getJob(id).then(job => job && jobToView(job));
   }
 
-  @OnUndefined(404)
-  @Get('/:status/:id')
-  public getJobByStatusAndId(@Param('status') status: string, @Param('id') id: string): Promise<JobView | undefined> {
+  public getJobByStatusAndId(status: string, id: string): Promise<JobView | undefined> {
     return this.jobsRepository.getJob(path.join(status, id)).then(job => job && jobToView(job));
   }
 
-  @Get('/')
-  public async getJobs(@QueryParam('status') status?: string) {
+  public async getJobs(status?: unknown) {
     const jobIds = status
       ? await this.jobsRepository.getAllJobIds().then(ids => ids.filter(id => jobIdtoStatus(id) === status))
       : await this.jobsRepository.getAllJobIds();
@@ -124,8 +118,7 @@ export class JobsController {
       .reverse();
   }
 
-  @Post('/')
-  public createJob(@Body() body: unknown) {
+  public createJob(body: unknown) {
     const jobInput = JobInputSchema.parse(body);
 
     // TODO: validate inputFilePath exists?
@@ -145,4 +138,25 @@ export class JobsController {
       })
       .then(job => job && jobToView(job));
   }
+}
+
+export function jobsRouter(env: Environment, service: JobsService, repository: JobsRepository): Router {
+  const router = Router();
+  const controller = new JobsController(env, service, repository);
+  router.get('/', async (req, res) => {
+    const status = req.query.status;
+    res.json(await controller.getJobs(status));
+  });
+  router.get('/:status/:id', async (req, res) => {
+    const job = await controller.getJobByStatusAndId(req.params.status, req.params.id);
+    if (job === undefined) res.status(404).end();
+    else res.json(job);
+  });
+  router.get('/:id', async (req, res) => {
+    const job = await controller.getJobById(req.params.id);
+    if (job === undefined) res.status(404).end();
+    else res.json(job);
+  });
+  router.post('/', async (req, res) => res.json(await controller.createJob(req.body === undefined ? {} : req.body)));
+  return router;
 }

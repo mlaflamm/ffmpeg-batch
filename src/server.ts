@@ -1,28 +1,38 @@
-import 'reflect-metadata';
-
-import { Server } from 'http';
-import assert from 'assert';
-import Container from 'typedi';
-
-import { Application } from 'express';
-
-import { createAppFramework } from './app';
-
-const randomString = () => {
-  Math.random().toString(36).slice(7);
-};
+import { createApplication } from './app.js';
 
 async function main() {
-  const framework = await createAppFramework(process.env.NODE_ENV || 'development', Container.of(randomString));
-  const app: Application = framework.settings.getData('app');
-  assert(app, 'app must be provided');
-
+  const application = await createApplication(process.env.NODE_ENV || 'development');
+  let stopping = false;
+  const shutdown = async () => {
+    if (stopping) return;
+    stopping = true;
+    const deadline = setTimeout(() => {
+      console.error('Shutdown exceeded eight seconds');
+      process.exit(1);
+    }, 8000);
+    try {
+      await application.close();
+    } catch (err) {
+      console.error('Shutdown failed:', err);
+      process.exitCode = 1;
+    } finally {
+      clearTimeout(deadline);
+      process.removeListener('SIGTERM', shutdown);
+      process.removeListener('SIGINT', shutdown);
+    }
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+  application.server.once('error', async err => {
+    console.error('Server failed:', err);
+    process.exitCode = 1;
+    await shutdown();
+  });
   const port = process.env.PORT || 3000;
-  const server: Server = framework.settings.getData('server');
-  server
-    .listen(port)
-    .once('listening', () => console.log('Server listening on port %s', port))
-    .once('error', err => console.error('server crash: %s', err.message));
+  application.server.listen(port, () => console.log('Server listening on port %s', port));
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error(err);
+  process.exitCode = 1;
+});

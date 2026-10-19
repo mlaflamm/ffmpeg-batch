@@ -45,7 +45,7 @@ const assert = require('node:assert/strict');
   const page = await fetch(base, { signal: AbortSignal.timeout(3000) });
   assert.equal(page.status, 200);
   assert.match(await page.text(), /<html/i);
-  const socket = await fetch(base + '/socket.io/?EIO=3&transport=polling', {
+  const socket = await fetch(base + '/socket.io/?EIO=4&transport=polling', {
     signal: AbortSignal.timeout(3000),
   });
   assert.equal(socket.status, 200);
@@ -56,3 +56,11 @@ const assert = require('node:assert/strict');
   process.exitCode = 1;
 });
 JS
+
+# Exercise PID 1's real signal handler and require a clean exit within Docker's timeout.
+docker stop --time 10 "$container_id" > /dev/null
+exit_code=$(docker inspect "$container_id" --format '{{.State.ExitCode}}')
+if [[ "$exit_code" != 0 ]]; then
+  echo "Production image did not shut down cleanly (exit $exit_code)" >&2
+  exit 1
+fi

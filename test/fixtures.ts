@@ -1,17 +1,11 @@
-import 'reflect-metadata';
-
 import path from 'path';
 import fs from 'fs';
 import touch from 'touch';
 import supertest, { Response } from 'supertest';
 import { assert } from 'chai';
-import { Container } from 'typedi';
 
-import { createAppFramework } from '../src/app';
-import { Job, VideoFileInfo } from '../src/libs/job.model';
-import { WatcherService } from '../src/libs/watcher.service';
-import { JobsService } from '../src/libs/jobs.service';
-import { Environment } from '../src/env';
+import { createApplication } from '../src/app.js';
+import { Job, VideoFileInfo } from '../src/libs/job.model.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
@@ -58,8 +52,8 @@ export const getSampleVideoFile = (type: 'mp4' | 'wmv' | 'mov' | 'av1'): Promise
       type === 'av1'
         ? ['-c:v', 'libaom-av1', '-cpu-used', '8', '-crf', '40']
         : type === 'wmv'
-        ? ['-c:v', 'wmv2']
-        : ['-c:v', 'libx264', '-crf', '21'];
+          ? ['-c:v', 'wmv2']
+          : ['-c:v', 'libx264', '-crf', '21'];
     await execFileAsync('ffmpeg', [
       '-v',
       'error',
@@ -95,16 +89,10 @@ export const getSampleVideoFile = (type: 'mp4' | 'wmv' | 'mov' | 'av1'): Promise
 const testDir = '.test';
 
 export const getFixtures = async function () {
-  const container = Container.of(randomString());
-  const framework = await createAppFramework('test', container);
-  const app = framework.settings.getData('app');
-  const env = container.get(Environment);
-
+  const application = await createApplication('test');
+  const { app, env } = application;
   const release = async () => {
-    container.get(WatcherService).stop();
-    container.get(JobsService).pause();
-    Container.reset(container.id);
-
+    await application.close();
     await fs.promises.rm(testDir, { recursive: true, force: true });
   };
 

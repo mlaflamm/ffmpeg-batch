@@ -1,17 +1,16 @@
 import fs from 'fs';
 
 import { assert } from 'chai';
-import { SuperTest, Test } from 'supertest';
 
-import { getFixtures, Fixtures, assertStatus, createJob } from '../fixtures';
-import { JobData } from '../../src/libs/job.model';
+import { getFixtures, Fixtures, assertStatus, createJob } from '../fixtures.js';
+import { JobData } from '../../src/libs/job.model.js';
 import * as path from 'path';
-import { eventually } from '../../src/libs/utils/eventually';
-import touch = require('touch');
+import { eventually } from '../../src/libs/utils/eventually.js';
+import touch from 'touch';
 
 describe('Jobs api routes', () => {
   let fixtures: Fixtures;
-  let request: SuperTest<Test>;
+  let request: Fixtures['request'];
   let testDir: string, jobDir: string;
 
   before(async () => {

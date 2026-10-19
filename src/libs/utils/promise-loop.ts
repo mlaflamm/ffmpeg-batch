@@ -1,22 +1,22 @@
-export const pLoop = (fn: (...args: any) => Promise<any>, interval: number): (() => Promise<void>) => {
+export const pLoop = (fn: () => Promise<unknown>, interval: number): (() => Promise<void>) => {
   let stopped = false;
-  let current = Promise.resolve();
-
-  const stop = () => {
-    stopped = true;
-    return current;
-  };
-  const loop = async () => {
-    if (stopped) {
-      return;
-    }
-    current = fn()
-      .then(() => {})
-      .catch(() => {});
-
-    await current;
-    setTimeout(loop, interval);
+  let timer: NodeJS.Timeout | undefined;
+  let current: Promise<void>;
+  const loop = () => {
+    current = Promise.resolve()
+      .then(fn)
+      .then(
+        () => {},
+        () => {}
+      )
+      .then(() => {
+        if (!stopped) timer = setTimeout(loop, interval);
+      });
   };
   loop();
-  return stop;
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    return current;
+  };
 };

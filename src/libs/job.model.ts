@@ -1,5 +1,5 @@
 import * as zod from 'myzod';
-import { VideoStreamInfo } from './utils/ffprobe';
+import { VideoStreamInfo } from './utils/ffprobe.js';
 
 export const JobInputSchema = zod.object({
   inputFilePath: zod.string(),

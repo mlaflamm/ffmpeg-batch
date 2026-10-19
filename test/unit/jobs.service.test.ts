@@ -2,15 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { extractVideoInfo } from '../../src/libs/utils/ffprobe';
+import { extractVideoInfo } from '../../src/libs/utils/ffprobe.js';
 
 import { assert } from 'chai';
 import nodeAssert from 'assert';
 
-import { JobsService } from '../../src/libs/jobs.service';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { getSampleVideoFile, randomString } from '../fixtures';
-import { readLastLine } from '../../src/libs/utils/read-last-line';
+import { JobsService } from '../../src/libs/jobs.service.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { getSampleVideoFile, randomString } from '../fixtures.js';
+import { readLastLine } from '../../src/libs/utils/read-last-line.js';
 
 describe('Job service', () => {
   const testDir = path.join('.test', randomString());
@@ -25,6 +25,45 @@ describe('Job service', () => {
   });
 
   describe('queue job', () => {
+    it('awaits an admitted queue write during shutdown', async () => {
+      const repository = new JobsRepository(testDir);
+      const addJob = repository.addJob.bind(repository);
+      let releaseWrite!: () => void;
+      let enteredWrite!: () => void;
+      const entered = new Promise<void>(resolve => {
+        enteredWrite = resolve;
+      });
+      const gate = new Promise<void>(resolve => {
+        releaseWrite = resolve;
+      });
+      repository.addJob = async (...args) => {
+        enteredWrite();
+        await gate;
+        return addJob(...args);
+      };
+      const service = new JobsService(repository);
+      const queued = service.queueJob({
+        inputFilePath: await getSampleVideoFile('mp4'),
+        outFilePath: 'output',
+        scriptName: 'scale.sh',
+      });
+      await entered;
+      let stopped = false;
+      const stopping = service.stop().then(() => {
+        stopped = true;
+      });
+      try {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        assert.isFalse(stopped);
+      } finally {
+        releaseWrite();
+      }
+      const job = await queued;
+      await stopping;
+      assert.isTrue(fs.existsSync(repository.getJobPath(job.jobId)));
+      assert.isTrue(stopped);
+    });
+
     it('should save job with input video info', async () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);
@@ -48,11 +87,27 @@ describe('Job service', () => {
       ]);
     });
 
+    it('treats shell syntax in media filenames literally during probing and conversion', async () => {
+      const inputFilePath = path.join(testDir, 'input$(printf injected).mp4');
+      const outFilePath = path.join(testDir, 'output$(printf injected).mp4');
+      await fs.promises.copyFile(await getSampleVideoFile('mp4'), inputFilePath);
+      const repository = new JobsRepository(testDir);
+      const service = new JobsService(repository);
+      try {
+        const job = await service.queueJob({ inputFilePath, outFilePath, scriptName: 'scale.sh' });
+        assert.equal(job.inputFileInfo?.codec_name, 'h264');
+        assert.match((await service.executeJob(job))!, /^done\//);
+        assert.equal((await extractVideoInfo(outFilePath)).codec_name, 'h264');
+      } finally {
+        await service.stop();
+      }
+    });
+
     it('should not fail if cannot extract video stream info from input file', async () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);
 
-      const inputFilePath = __filename; // file exist but not a video
+      const inputFilePath = import.meta.filename; // file exist but not a video
       const jobData = { inputFilePath, outFilePath: 'output', scriptName: 'test.sh' };
       const queuedJob = await service.queueJob(jobData);
 
@@ -72,7 +127,7 @@ describe('Job service', () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);
 
-      const jobData = { inputFilePath: __dirname, outFilePath: 'output', scriptName: 'test.sh' };
+      const jobData = { inputFilePath: import.meta.dirname, outFilePath: 'output', scriptName: 'test.sh' };
       await nodeAssert.rejects(() => service.queueJob(jobData));
     });
   });

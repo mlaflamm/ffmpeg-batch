@@ -1,9 +1,4 @@
-import util from 'util';
-import child_process from 'child_process';
-
-import get from 'lodash/get';
-
-const exec = util.promisify(child_process.exec);
+import { ProcessRunner } from './process-runner.js';
 
 export type VideoStreamInfo = Partial<{
   codec_name: string; // "h264"
@@ -14,7 +9,17 @@ export type VideoStreamInfo = Partial<{
   bit_rate: string; //"37798"
 }>;
 
-export const extractVideoInfo = async (filePath: string): Promise<VideoStreamInfo> => {
-  const command = `ffprobe -v error -select_streams v:0 -show_entries stream=width,height,duration,bit_rate,codec_name,display_aspect_ratio -of json "${filePath}"`;
-  return exec(command).then(({ stdout }) => get(JSON.parse(stdout), 'streams.0'));
+export const extractVideoInfo = async (filePath: string, runner = new ProcessRunner()): Promise<VideoStreamInfo> => {
+  const stdout = await runner.run('ffprobe', [
+    '-v',
+    'error',
+    '-select_streams',
+    'v:0',
+    '-show_entries',
+    'stream=width,height,duration,bit_rate,codec_name,display_aspect_ratio',
+    '-of',
+    'json',
+    filePath,
+  ]);
+  return JSON.parse(stdout).streams?.[0];
 };

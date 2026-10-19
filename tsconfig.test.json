@@ -1,6 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "strictNullChecks": false
-  }
+    "rootDir": ".",
+    "outDir": "dist-test",
+    "types": ["node", "mocha"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

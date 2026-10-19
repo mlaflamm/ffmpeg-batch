@@ -3,14 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import prettyMs from 'pretty-ms';
 
-import { Service } from 'typedi';
-import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model';
-import { readFirstLine } from './utils/read-first-line';
-import { readLastLine } from './utils/read-last-line';
+import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model.js';
+import { readFirstLine } from './utils/read-first-line.js';
+import { readLastLine } from './utils/read-last-line.js';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 
-@Service()
 export class JobsRepository {
   private readonly todoDir: string;
   private readonly errorDir: string;
@@ -28,6 +26,10 @@ export class JobsRepository {
 
   // getJobPath
   getJobPath(jobId: string): string {
+    const root = path.resolve(this.jobsDir) + path.sep;
+    if (!path.resolve(this.jobsDir, jobId).startsWith(root)) {
+      throw Object.assign(new Error('Job path must stay inside the jobs directory'), { statusCode: 400 });
+    }
     return path.join(this.jobsDir, jobId);
   }
 
