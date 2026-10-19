@@ -31,3 +31,8 @@ AGENTS.md
 docs/*.local.md
 
 dist-test
+
+# Checkout-local dependency refresh review artifacts
+docs/dependency-refresh.md
+docs/dependency-refresh-ledger.md
+docs/screenshots/dependency-refresh-tail.png

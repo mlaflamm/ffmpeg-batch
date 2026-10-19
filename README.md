@@ -23,9 +23,6 @@ no sample media downloads are required. Application and tests use native ESM;
 source-mapped c8 coverage. For development, run `npm run watch-ts` and
 `npm run watch` in separate terminals; the latter uses Node's built-in watcher.
 
-See the [dependency refresh notes](docs/dependency-refresh.md) for intentional
-behavior changes, configuration syntax and local image trial instructions.
-
 ## Docker
 
 The image uses `node:24-trixie-slim` and Debian FFmpeg with AV1 decoding support.
