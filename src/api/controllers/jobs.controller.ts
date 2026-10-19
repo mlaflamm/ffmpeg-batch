@@ -157,6 +157,6 @@ export function jobsRouter(env: Environment, service: JobsService, repository: J
     if (job === undefined) res.status(404).end();
     else res.json(job);
   });
-  router.post('/', async (req, res) => res.json(await controller.createJob(req.body)));
+  router.post('/', async (req, res) => res.json(await controller.createJob(req.body === undefined ? {} : req.body)));
   return router;
 }

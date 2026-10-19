@@ -14,6 +14,14 @@ describe('Live logs', () => {
     await new Promise<void>(resolve => application.server.listen(0, '127.0.0.1', resolve));
     const address = application.server.address();
     if (!address || typeof address === 'string') throw new Error('Missing server address');
+    const handshake = await fetch(`http://127.0.0.1:${address.port}/socket.io/?EIO=4&transport=polling`, {
+      headers: { Origin: 'https://example.test' },
+      signal: AbortSignal.timeout(1000),
+    });
+    assert.equal(handshake.status, 200);
+    assert.equal(handshake.headers.get('access-control-allow-origin'), 'https://example.test');
+    assert.equal(handshake.headers.get('access-control-allow-credentials'), 'true');
+    assert.include(await handshake.text(), '"sid"');
     const socket = connect(`http://127.0.0.1:${address.port}`, { forceNew: true, reconnection: false });
     const lines: string[] = [];
     socket.on('connect', () => {

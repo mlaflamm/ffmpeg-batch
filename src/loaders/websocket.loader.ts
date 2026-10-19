@@ -30,7 +30,7 @@ export function attachWebsocket(app: Application, server: Server, jobsRepository
       }
     );
   };
-  const io = new SocketServer(server);
+  const io = new SocketServer(server, { cors: { origin: true, credentials: true } });
   io.on('connection', socket => {
     socket.on('tail', (data: unknown) => {
       if (stopping || typeof data !== 'string' || !data.startsWith('/jobs/')) return;

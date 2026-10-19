@@ -17,6 +17,12 @@ describe('HTTP contracts', () => {
     const invalid = await request.post('/api/jobs').send({});
     assert.equal(invalid.status, 400);
     assert.include(invalid.body.message, 'inputFilePath');
+    const empty = await request.post('/api/jobs');
+    assert.equal(empty.status, 400);
+    assert.equal(empty.body.message, invalid.body.message);
+    const text = await request.post('/api/jobs').set('Content-Type', 'text/plain').send('ignored');
+    assert.equal(text.status, 400);
+    assert.equal(text.body.message, invalid.body.message);
     const malformed = await request.post('/api/jobs').set('Content-Type', 'application/json').send('{');
     assert.equal(malformed.status, 400);
     assert.isString(malformed.body.message);
