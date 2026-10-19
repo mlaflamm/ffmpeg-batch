@@ -21,8 +21,9 @@ docker exec -it <container> /bin/bash
 
 ## Dependency installation
 
-`.npmrc` enables `legacy-peer-deps` because `routing-controllers` declares a
-`class-transformer` peer version range that excludes the installed version.
+`.npmrc` disables `legacy-peer-deps`; install with normal peer dependency
+resolution using `npm ci`. The decorator/controller framework and its conflicting
+peer dependencies have been removed.
 
 ## Continuous integration and image publishing
 
