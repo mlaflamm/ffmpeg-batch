@@ -19,12 +19,6 @@ To open a shell in a running container:
 docker exec -it <container> /bin/bash
 ```
 
-## Dependency installation
-
-`.npmrc` disables `legacy-peer-deps`; install with normal peer dependency
-resolution using `npm ci`. The decorator/controller framework and its conflicting
-peer dependencies have been removed.
-
 ## Continuous integration and image publishing
 
 The **CI** workflow runs on pull requests, pushes to `master`, and manual runs.
