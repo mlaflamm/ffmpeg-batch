@@ -2,6 +2,17 @@ import fs from 'fs';
 import ms from 'ms';
 import dotenv from 'dotenv';
 
+const isDuration = (value: string): value is ms.StringValue =>
+  value.length <= 100 &&
+  /^-?(?:\d+)?\.?\d+ *(?:milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.test(
+    value
+  );
+
+export function parseDuration(value: string): number {
+  if (!isDuration(value)) throw new Error(`Invalid duration: ${value}`);
+  return ms(value);
+}
+
 export class Environment {
   public nodeEnv: string;
 
@@ -40,15 +51,15 @@ export class Environment {
     this.jobs = {
       enabled: toBool(getOsEnv('JOBS_ENABLED')),
       dir: getOsEnv('JOBS_DIR') || '.temp/jobs',
-      pollIntervalMs: ms(getOsEnv('JOBS_POLL_INTERVAL') || '5m'),
-      cleanupIntervalMs: ms(getOsEnv('JOBS_CLEANUP_INTERVAL') || '6h'),
-      cleanupMaxAgeMs: ms(getOsEnv('JOBS_CLEANUP_MAX_AGE') || '5d'),
+      pollIntervalMs: parseDuration(getOsEnv('JOBS_POLL_INTERVAL') || '5m'),
+      cleanupIntervalMs: parseDuration(getOsEnv('JOBS_CLEANUP_INTERVAL') || '6h'),
+      cleanupMaxAgeMs: parseDuration(getOsEnv('JOBS_CLEANUP_MAX_AGE') || '5d'),
       detailsList: toBool(getOsEnv('JOBS_DETAILS_LIST')),
     };
     this.watch = {
       enabled: toBool(getOsEnv('WATCH_ENABLED')),
       dir: getOsEnv('WATCH_DIR') || devOnly('WATCH_DIR', '.temp/watch'),
-      pollIntervalMs: ms(getOsEnv('WATCH_POLL_INTERVAL') || '2m'),
+      pollIntervalMs: parseDuration(getOsEnv('WATCH_POLL_INTERVAL') || '2m'),
       defaultScript: getOsEnv('WATCH_DEFAULT_SCRIPT') || 'scale.sh',
     };
   }
