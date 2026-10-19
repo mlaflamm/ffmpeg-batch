@@ -27,3 +27,6 @@ Thumbs.db
 .env*
 !.env.test
 dist-test
+
+# Checkout-local documentation
+*.local.md

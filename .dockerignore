@@ -32,7 +32,5 @@ docs/*.local.md
 
 dist-test
 
-# Checkout-local dependency refresh review artifacts
-docs/dependency-refresh.md
-docs/dependency-refresh-ledger.md
+# Checkout-local dependency refresh screenshot
 docs/screenshots/dependency-refresh-tail.png
