@@ -29,8 +29,6 @@ dist
 .aws
 AGENTS.md
 docs/*.local.md
+docs/*.local.png
 
 dist-test
-
-# Checkout-local dependency refresh screenshot
-docs/screenshots/dependency-refresh-tail.png
