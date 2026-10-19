@@ -4,8 +4,8 @@ import touch from 'touch';
 import supertest, { Response } from 'supertest';
 import { assert } from 'chai';
 
-import { createApplication } from '../src/app';
-import { Job, VideoFileInfo } from '../src/libs/job.model';
+import { createApplication } from '../src/app.js';
+import { Job, VideoFileInfo } from '../src/libs/job.model.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 

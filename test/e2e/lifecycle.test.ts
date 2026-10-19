@@ -4,12 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { createApplication } from '../../src/app';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { JobsService } from '../../src/libs/jobs.service';
-import { ProcessRunner } from '../../src/libs/utils/process-runner';
-import { eventually } from '../../src/libs/utils/eventually';
-import { getSampleVideoFile } from '../fixtures';
+import { createApplication } from '../../src/app.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { JobsService } from '../../src/libs/jobs.service.js';
+import { ProcessRunner } from '../../src/libs/utils/process-runner.js';
+import { eventually } from '../../src/libs/utils/eventually.js';
+import { getSampleVideoFile } from '../fixtures.js';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

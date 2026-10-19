@@ -1,4 +1,4 @@
-import { ProcessRunner } from './process-runner';
+import { ProcessRunner } from './process-runner.js';
 
 export type VideoStreamInfo = Partial<{
   codec_name: string; // "h264"

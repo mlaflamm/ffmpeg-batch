@@ -3,14 +3,14 @@ import http from 'http';
 import cors from 'cors';
 import morgan from 'morgan';
 import { ValidationError } from 'myzod';
-import { Environment } from './env';
-import { JobsRepository } from './libs/jobs.repository';
-import { JobsService } from './libs/jobs.service';
-import { WatcherService } from './libs/watcher.service';
-import { pLoop } from './libs/utils/promise-loop';
-import { jobsRouter } from './api/controllers/jobs.controller';
-import { attachWebui } from './loaders/webui.loader';
-import { attachWebsocket } from './loaders/websocket.loader';
+import { Environment } from './env.js';
+import { JobsRepository } from './libs/jobs.repository.js';
+import { JobsService } from './libs/jobs.service.js';
+import { WatcherService } from './libs/watcher.service.js';
+import { pLoop } from './libs/utils/promise-loop.js';
+import { jobsRouter } from './api/controllers/jobs.controller.js';
+import { attachWebui } from './loaders/webui.loader.js';
+import { attachWebsocket } from './loaders/websocket.loader.js';
 
 export async function createApplication(environment: string) {
   const env = new Environment(environment);

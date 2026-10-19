@@ -4,10 +4,10 @@ import prettyMs from 'pretty-ms';
 import filesize from 'filesize';
 
 import { Router } from 'express';
-import { JobsRepository } from '../../libs/jobs.repository';
-import { JobDetails, JobInputSchema, VideoFileInfo } from '../../libs/job.model';
-import { JobsService } from '../../libs/jobs.service';
-import { Environment } from '../../env';
+import { JobsRepository } from '../../libs/jobs.repository.js';
+import { JobDetails, JobInputSchema, VideoFileInfo } from '../../libs/job.model.js';
+import { JobsService } from '../../libs/jobs.service.js';
+import { Environment } from '../../env.js';
 
 type JobSummary = {
   id: string;

@@ -2,15 +2,15 @@ import fs from 'fs';
 import path from 'path';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { extractVideoInfo } from '../../src/libs/utils/ffprobe';
+import { extractVideoInfo } from '../../src/libs/utils/ffprobe.js';
 
 import { assert } from 'chai';
 import nodeAssert from 'assert';
 
-import { JobsService } from '../../src/libs/jobs.service';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { getSampleVideoFile, randomString } from '../fixtures';
-import { readLastLine } from '../../src/libs/utils/read-last-line';
+import { JobsService } from '../../src/libs/jobs.service.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { getSampleVideoFile, randomString } from '../fixtures.js';
+import { readLastLine } from '../../src/libs/utils/read-last-line.js';
 
 describe('Job service', () => {
   const testDir = path.join('.test', randomString());
@@ -68,7 +68,7 @@ describe('Job service', () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);
 
-      const inputFilePath = __filename; // file exist but not a video
+      const inputFilePath = import.meta.filename; // file exist but not a video
       const jobData = { inputFilePath, outFilePath: 'output', scriptName: 'test.sh' };
       const queuedJob = await service.queueJob(jobData);
 
@@ -88,7 +88,7 @@ describe('Job service', () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);
 
-      const jobData = { inputFilePath: __dirname, outFilePath: 'output', scriptName: 'test.sh' };
+      const jobData = { inputFilePath: import.meta.dirname, outFilePath: 'output', scriptName: 'test.sh' };
       await nodeAssert.rejects(() => service.queueJob(jobData));
     });
   });

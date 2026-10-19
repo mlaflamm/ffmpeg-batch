@@ -1,4 +1,4 @@
-import { createApplication } from './app';
+import { createApplication } from './app.js';
 
 async function main() {
   const application = await createApplication(process.env.NODE_ENV || 'development');

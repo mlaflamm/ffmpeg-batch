@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import { getFixtures, Fixtures } from '../fixtures';
+import { getFixtures, Fixtures } from '../fixtures.js';
 
 describe('HTTP contracts', () => {
   let fixtures: Fixtures;

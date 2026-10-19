@@ -1,9 +1,10 @@
 import { assert } from 'chai';
 import fs from 'fs';
-import { createApplication } from '../../src/app';
-import { eventually } from '../../src/libs/utils/eventually';
+import { createApplication } from '../../src/app.js';
+import { eventually } from '../../src/libs/utils/eventually.js';
 
-const connect = require('socket.io-client');
+import { createRequire } from 'node:module';
+const connect = createRequire(import.meta.url)('socket.io-client');
 
 describe('Live logs', () => {
   it('delivers existing lines, CR progress, appended lines and reconnects', async function () {

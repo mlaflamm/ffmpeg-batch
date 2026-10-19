@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import prettyMs from 'pretty-ms';
 
-import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model';
-import { readFirstLine } from './utils/read-first-line';
-import { readLastLine } from './utils/read-last-line';
+import { Job, JobData, JobDetails, JobResult, VideoFileInfo } from './job.model.js';
+import { readFirstLine } from './utils/read-first-line.js';
+import { readLastLine } from './utils/read-last-line.js';
 
 const debug = namespace('ffmpeg-batch:job.repository');
 

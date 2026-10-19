@@ -1,8 +1,8 @@
 import { assert } from 'chai';
 import * as nodeAssert from 'assert';
 
-import { extractVideoInfo } from '../../../src/libs/utils/ffprobe';
-import { getSampleVideoFile } from '../../fixtures';
+import { extractVideoInfo } from '../../../src/libs/utils/ffprobe.js';
+import { getSampleVideoFile } from '../../fixtures.js';
 
 describe('ffprobe', () => {
   for (const type of ['mp4', 'wmv', 'mov', 'av1'] as const) {

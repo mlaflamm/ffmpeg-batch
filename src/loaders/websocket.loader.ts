@@ -5,9 +5,10 @@ import path from 'path';
 import { Application } from 'express';
 import { Server } from 'http';
 
-import { JobsRepository } from '../libs/jobs.repository';
+import { JobsRepository } from '../libs/jobs.repository.js';
 
-const sliceFile = require('slice-file-ml');
+import { createRequire } from 'node:module';
+const sliceFile = createRequire(import.meta.url)('slice-file-ml');
 
 const debug = namespace('ffmpeg-batch:websocket.loader');
 

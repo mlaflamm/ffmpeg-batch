@@ -4,10 +4,10 @@ import touch from 'touch';
 
 import { assert } from 'chai';
 
-import { scan, transform, WatcherService } from '../../src/libs/watcher.service';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { randomString } from '../fixtures';
-import { JobsService } from '../../src/libs/jobs.service';
+import { scan, transform, WatcherService } from '../../src/libs/watcher.service.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { randomString } from '../fixtures.js';
+import { JobsService } from '../../src/libs/jobs.service.js';
 
 describe('Watcher service', () => {
   const testDir = path.join('.test', randomString());

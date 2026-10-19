@@ -2,8 +2,8 @@ import namespace from 'debug';
 import fs from 'fs';
 import path from 'path';
 
-import { JobsService } from './jobs.service';
-import { pLoop } from './utils/promise-loop';
+import { JobsService } from './jobs.service.js';
+import { pLoop } from './utils/promise-loop.js';
 
 const debug = namespace('ffmpeg-batch:watcher.service');
 

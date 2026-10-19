@@ -1,6 +1,7 @@
 import fs from 'fs';
 
-const sliceFile = require('slice-file-ml');
+import { createRequire } from 'node:module';
+const sliceFile = createRequire(import.meta.url)('slice-file-ml');
 
 // Promisified version of the `last-line` npm module with proper file close
 // https://www.npmjs.com/package/last-line

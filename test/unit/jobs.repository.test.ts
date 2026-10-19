@@ -3,12 +3,12 @@ import path from 'path';
 import ms = require('ms');
 
 import { assert } from 'chai';
-import difference from 'lodash/difference';
+import difference from 'lodash/difference.js';
 
-import { readLastLine } from '../../src/libs/utils/read-last-line';
-import { JobsRepository } from '../../src/libs/jobs.repository';
-import { Job, VideoFileInfo } from '../../src/libs/job.model';
-import * as fixture from '../fixtures';
+import { readLastLine } from '../../src/libs/utils/read-last-line.js';
+import { JobsRepository } from '../../src/libs/jobs.repository.js';
+import { Job, VideoFileInfo } from '../../src/libs/job.model.js';
+import * as fixture from '../fixtures.js';
 
 describe('Job repository', () => {
   const testDir = path.join('.test', fixture.randomString());

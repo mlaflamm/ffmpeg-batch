@@ -1,11 +1,11 @@
 import namespace from 'debug';
 import path from 'path';
-import { ProcessRunner } from './utils/process-runner';
+import { ProcessRunner } from './utils/process-runner.js';
 
-import { Job, JobData, VideoFileInfo } from './job.model';
-import { JobsRepository } from './jobs.repository';
+import { Job, JobData, VideoFileInfo } from './job.model.js';
+import { JobsRepository } from './jobs.repository.js';
 import { EventEmitter } from 'events';
-import { extractVideoInfo } from './utils/ffprobe';
+import { extractVideoInfo } from './utils/ffprobe.js';
 import fs from 'fs';
 
 const debug = namespace('ffmpeg-batch:job.service');
