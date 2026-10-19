@@ -68,7 +68,7 @@ export async function createApplication(environment: string) {
             console.error('Job processing stopped:', err);
             process.exitCode = 1;
             // Do not await our own worker during cleanup.
-            void close();
+            void close().catch(error => console.error('Application cleanup failed:', error));
           }
         }
       }

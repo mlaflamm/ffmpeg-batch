@@ -56,3 +56,11 @@ const assert = require('node:assert/strict');
   process.exitCode = 1;
 });
 JS
+
+# Exercise PID 1's real signal handler and require a clean exit within Docker's timeout.
+docker stop --time 10 "$container_id" > /dev/null
+exit_code=$(docker inspect "$container_id" --format '{{.State.ExitCode}}')
+if [[ "$exit_code" != 0 ]]; then
+  echo "Production image did not shut down cleanly (exit $exit_code)" >&2
+  exit 1
+fi

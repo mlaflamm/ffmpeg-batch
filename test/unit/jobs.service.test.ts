@@ -25,6 +25,45 @@ describe('Job service', () => {
   });
 
   describe('queue job', () => {
+    it('awaits an admitted queue write during shutdown', async () => {
+      const repository = new JobsRepository(testDir);
+      const addJob = repository.addJob.bind(repository);
+      let releaseWrite!: () => void;
+      let enteredWrite!: () => void;
+      const entered = new Promise<void>(resolve => {
+        enteredWrite = resolve;
+      });
+      const gate = new Promise<void>(resolve => {
+        releaseWrite = resolve;
+      });
+      repository.addJob = async (...args) => {
+        enteredWrite();
+        await gate;
+        return addJob(...args);
+      };
+      const service = new JobsService(repository);
+      const queued = service.queueJob({
+        inputFilePath: await getSampleVideoFile('mp4'),
+        outFilePath: 'output',
+        scriptName: 'scale.sh',
+      });
+      await entered;
+      let stopped = false;
+      const stopping = service.stop().then(() => {
+        stopped = true;
+      });
+      try {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        assert.isFalse(stopped);
+      } finally {
+        releaseWrite();
+      }
+      const job = await queued;
+      await stopping;
+      assert.isTrue(fs.existsSync(repository.getJobPath(job.jobId)));
+      assert.isTrue(stopped);
+    });
+
     it('should save job with input video info', async () => {
       const repository = new JobsRepository(testDir);
       const service = new JobsService(repository);

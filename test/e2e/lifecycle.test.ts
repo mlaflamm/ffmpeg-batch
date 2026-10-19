@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import nodeAssert from 'assert';
 import fs from 'fs';
 import path from 'path';
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { createApplication } from '../../src/app.js';
 import { JobsRepository } from '../../src/libs/jobs.repository.js';
@@ -92,11 +92,30 @@ describe('Application lifecycle', () => {
     const repository = new JobsRepository(path.join(dir, 'jobs'));
     const service = new JobsService(repository);
     const job = await service.queueJob({ inputFilePath: input, outFilePath: output, scriptName: 'scale.sh' });
-    const running = service.executeJob(job);
+    await service.stop();
+    const child = spawn(process.execPath, ['dist/server.js'], {
+      env: {
+        ...process.env,
+        NODE_ENV: 'test',
+        JOBS_ENABLED: 'true',
+        JOBS_DIR: path.join(dir, 'jobs'),
+        WATCH_ENABLED: 'false',
+        PORT: '0',
+        JOBS_CLEANUP_INTERVAL: '0',
+        DEBUG: '',
+      },
+      stdio: 'ignore',
+    });
+    const exited = new Promise<number | null>((resolve, reject) => {
+      child.once('error', reject);
+      child.once('close', resolve);
+    });
     try {
       await eventually(async () => assert.isAbove((await fs.promises.stat(output)).size, 0), 10, 3000);
-      await service.stop();
-      assert.isUndefined(await running);
+      const stopTime = Date.now();
+      child.kill('SIGTERM');
+      assert.equal(await exited, 0);
+      assert.isBelow(Date.now() - stopTime, 8000);
       const startedId = path.basename(job.jobId);
       assert.isTrue(fs.existsSync(repository.getJobPath(startedId)));
       assert.deepEqual(await fs.promises.readdir(path.join(dir, 'jobs/error')), []);
@@ -115,8 +134,8 @@ describe('Application lifecycle', () => {
         await restarted.stop();
       }
     } finally {
-      await service.stop();
-      await running;
+      if (child.exitCode === null) child.kill('SIGTERM');
+      await exited;
     }
   });
 });

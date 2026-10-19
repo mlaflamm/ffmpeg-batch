@@ -12,6 +12,7 @@ const debug = namespace('ffmpeg-batch:job.service');
 
 export class JobsService {
   private stopped = false;
+  private readonly operations = new Set<Promise<unknown>>();
   private readonly processes = new ProcessRunner();
   private paused: boolean = false;
   private readonly emitter: EventEmitter = new EventEmitter();
@@ -34,7 +35,20 @@ export class JobsService {
   }
 
   // queueJob
-  async queueJob(data: JobData): Promise<Job> {
+  queueJob(data: JobData): Promise<Job> {
+    return this.track(this.queueJobImpl(data));
+  }
+
+  private track<T>(operation: Promise<T>): Promise<T> {
+    this.operations.add(operation);
+    void operation.then(
+      () => this.operations.delete(operation),
+      () => this.operations.delete(operation)
+    );
+    return operation;
+  }
+
+  private async queueJobImpl(data: JobData): Promise<Job> {
     if (this.stopped) throw new Error('Jobs service stopped');
     // Don't duplicate job
     const pendingJobs = await this.repository.getIncompleteJobs();
@@ -56,7 +70,11 @@ export class JobsService {
   }
 
   // executeJob
-  async executeJob(job: Job): Promise<string | undefined> {
+  executeJob(job: Job): Promise<string | undefined> {
+    return this.track(this.executeJobImpl(job));
+  }
+
+  private async executeJobImpl(job: Job): Promise<string | undefined> {
     if (this.stopped) return;
     const startedJob = await this.repository.startJob(job.jobId);
     if (!startedJob) {
@@ -86,6 +104,7 @@ export class JobsService {
     this.resume();
     this.emitter.emit('job');
     await this.processes.close();
+    await Promise.allSettled([...this.operations]);
   }
 
   public async getNextJob(): Promise<Job> {
