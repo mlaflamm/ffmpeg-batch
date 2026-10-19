@@ -14,7 +14,7 @@ describe('Live-log page', () => {
     let scrolled = 0;
     let scheduled: (() => void) | undefined;
     const tailing = {
-      append: (node: typeof nodes[number]) => nodes.push(node),
+      append: (node: (typeof nodes)[number]) => nodes.push(node),
       replaceChildren: () => {
         nodes.length = 0;
       },
@@ -44,7 +44,7 @@ describe('Live-log page', () => {
         scheduled = undefined;
       },
       io: () => ({
-        on: (name: string, handler: typeof handlers[string]) => {
+        on: (name: string, handler: (typeof handlers)[string]) => {
           handlers[name] = handler;
         },
         emit: (...args: unknown[]) => emissions.push(args),

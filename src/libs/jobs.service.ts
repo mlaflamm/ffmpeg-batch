@@ -18,7 +18,10 @@ export class JobsService {
   private readonly emitter: EventEmitter = new EventEmitter();
   private readonly scriptsDir: string;
 
-  constructor(private readonly repository: JobsRepository, private readonly pollIntervalMs: number = 5 * 60 * 1000) {
+  constructor(
+    private readonly repository: JobsRepository,
+    private readonly pollIntervalMs: number = 5 * 60 * 1000
+  ) {
     this.scriptsDir = './scripts';
   }
 

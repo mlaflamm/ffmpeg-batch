@@ -52,8 +52,8 @@ export const getSampleVideoFile = (type: 'mp4' | 'wmv' | 'mov' | 'av1'): Promise
       type === 'av1'
         ? ['-c:v', 'libaom-av1', '-cpu-used', '8', '-crf', '40']
         : type === 'wmv'
-        ? ['-c:v', 'wmv2']
-        : ['-c:v', 'libx264', '-crf', '21'];
+          ? ['-c:v', 'wmv2']
+          : ['-c:v', 'libx264', '-crf', '21'];
     await execFileAsync('ffmpeg', [
       '-v',
       'error',
