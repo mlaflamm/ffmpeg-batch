@@ -123,5 +123,13 @@ retry after their job file has been inactive for more than one minute. Discovery
 can take another job poll interval (`JOBS_POLL_INTERVAL`, default `5m`). Conversion
 scripts restart the conversion from the beginning and overwrite partial output;
 they do not resume at the previous frame. Keep the input available until the job
-completes. Recovery is covered by a regression test using a stale job and partial
-output.
+completes. Recovery tests send SIGTERM to the actual server during FFmpeg,
+verify no old conversion can continue writing, and restart to playable output.
+
+Allow at least **10 seconds** for container shutdown (`docker stop --time 10`, or
+an equivalent configured timeout). Shutdown stops new work and closes HTTP,
+sockets, log readers, watcher scans and timers. An active conversion process group
+gets five seconds after SIGTERM, then SIGKILL if necessary; the server enforces an
+eight-second total deadline and reports cleanup failure through a nonzero exit.
+An intentionally interrupted job stays in progress for recovery and is not moved
+to the error directory.

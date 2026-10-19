@@ -18,7 +18,13 @@ npm start
 ```
 
 Tests generate short MP4, MOV, WMV, and AV1 fixtures locally under `.temp/`;
-no sample media downloads are required.
+no sample media downloads are required. Application and tests use native ESM;
+`npm test` compiles strict TypeScript to `dist-test/` before running Mocha, with
+source-mapped c8 coverage. For development, run `npm run watch-ts` and
+`npm run watch` in separate terminals; the latter uses Node's built-in watcher.
+
+See the [dependency refresh notes](docs/dependency-refresh.md) for intentional
+behavior changes, configuration syntax and local image trial instructions.
 
 ## Docker
 
