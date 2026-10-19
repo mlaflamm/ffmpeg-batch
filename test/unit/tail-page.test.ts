@@ -3,6 +3,34 @@ import fs from 'fs';
 import vm from 'vm';
 
 describe('Live-log page', () => {
+  for (const name of ['100% pure cold', 'literal%20name', 'name#part?', 'café']) {
+    it(`initializes live logs for ${name}`, async () => {
+      const page = await fs.promises.readFile('webui/tail.html', 'utf8');
+      const script = page.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+      assert.isString(script);
+      const pathname = `/jobs/done/${encodeURIComponent(name + '.job')}`;
+      const emissions: unknown[][] = [];
+      const document = {
+        title: '',
+        addEventListener: (_name: string, ready: () => void) => ready(),
+        getElementById: () => ({ replaceChildren: () => {} }),
+      };
+      vm.runInNewContext(script!, {
+        document,
+        window: { location: { pathname } },
+        console: { log: () => {} },
+        io: () => ({
+          on: (event: string, handler: () => void) => {
+            if (event === 'connect') handler();
+          },
+          emit: (...args: unknown[]) => emissions.push(args),
+        }),
+      });
+      assert.equal(document.title, name);
+      assert.deepEqual(emissions, [['tail', pathname]]);
+    });
+  }
+
   it('renders socket logs as text, clears on reconnect and scrolls to the end', async () => {
     const page = await fs.promises.readFile('webui/tail.html', 'utf8');
     assert.notInclude(page, 'jquery');

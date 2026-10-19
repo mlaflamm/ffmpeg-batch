@@ -36,7 +36,7 @@ export function attachWebsocket(app: Application, server: Server, jobsRepository
       if (stopping || typeof data !== 'string' || !data.startsWith('/jobs/')) return;
       let jobPath: string;
       try {
-        jobPath = jobsRepository.getJobPath(decodeURI(data).slice('/jobs/'.length));
+        jobPath = jobsRepository.getJobPath(decodeURIComponent(data).slice('/jobs/'.length));
       } catch {
         return;
       }
